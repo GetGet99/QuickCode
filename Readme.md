@@ -214,10 +214,10 @@ Print(i) // 5
 
 However, these codes are not valid QuickCode codes.
 ```
-```
 for i in 0..10:
     break if i == 5
 Print(i) // invalid code: i is not defined in outter scope
+```
 ```
 i := true
 for i in 0..10: // invalid code: i is of different type
