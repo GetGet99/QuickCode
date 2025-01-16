@@ -266,8 +266,8 @@ if i > 10:
         // exits "if i > 20" block, not "if i > 10" block
         // so basically, "exit" statement here acts like a no-op.
         exit 
-    i++ // does not run
-    Print(42) // does not run
+    i++ // is actually run
+    Print(42) // prints 42
 Print(i) // 20
 ```
 
