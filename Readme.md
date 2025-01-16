@@ -52,7 +52,7 @@ namespace QuickCode.Example:
             Print("Hello World")
 ```
 
-## Syntaxes in detail
+## Syntaxs in detail
 
 ### Indentation
 
