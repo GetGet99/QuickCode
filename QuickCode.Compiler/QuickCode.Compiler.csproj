@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuickCode.AST\QuickCode.AST.csproj" />
+    <ProjectReference Include="..\QuickCode.MSIL\QuickCode.MSIL.csproj" />
+    <ProjectReference Include="..\QuickCode.TypeChecking\QuickCode.TypeChecking.csproj" />
+    <ProjectReference Include="..\QuickCode\QuickCode.Parser.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -478,6 +478,14 @@ i := 0
 Print($"i is equal to {0}")
 ```
 
+## Array & List
+
+```
+numarr : arr[int] = arr[1, 2, 3, 4]
+numarr2 : int[] = arr[1, 2, 3, 4] // equivalent
+numlist : list[int] = arr[1, 2, 3, 4]
+```
+
 ## Classes
 
 *Classes, and structs are currently not yet implemented. The specs is also subject to change.*
