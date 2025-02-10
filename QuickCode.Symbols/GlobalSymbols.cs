@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
-namespace QuickCode.AST.Symbols;
+namespace QuickCode.Symbols;
 public class GlobalSymbols : INamespaceSymbol
 {
     string? INamespaceSymbol.FullName => null;

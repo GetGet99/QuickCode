@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace QuickCode.AST.Symbols;
+namespace QuickCode.Symbols;
 
 public interface INamespaceSymbol
 {

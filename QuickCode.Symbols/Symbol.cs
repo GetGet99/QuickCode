@@ -1,3 +1,3 @@
-﻿namespace QuickCode.AST.Symbols;
+﻿namespace QuickCode.Symbols;
 
 public abstract record class Symbol;

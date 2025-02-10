@@ -1,4 +1,4 @@
-﻿namespace QuickCode.AST.Symbols;
+﻿namespace QuickCode.Symbols;
 
 public record class LocalVarSymbol(TypeSymbol Type) : VarSymbol(Type)
 {

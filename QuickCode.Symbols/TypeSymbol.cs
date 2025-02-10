@@ -1,4 +1,4 @@
-﻿namespace QuickCode.AST.Symbols;
+﻿namespace QuickCode.Symbols;
 
 public abstract record class TypeSymbol(string Name) : Symbol
 {

@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Emit;
 
-namespace QuickCode.AST.Symbols;
+namespace QuickCode.Symbols;
 
 public class SymbolTable(SymbolTable? Parent = null)
 {
