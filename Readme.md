@@ -52,7 +52,7 @@ namespace QuickCode.Example:
             Print("Hello World")
 ```
 
-## Syntaxes in detail
+## Syntaxs in detail
 
 ### Indentation
 
@@ -214,10 +214,10 @@ Print(i) // 5
 
 However, these codes are not valid QuickCode codes.
 ```
-```
 for i in 0..10:
     break if i == 5
 Print(i) // invalid code: i is not defined in outter scope
+```
 ```
 i := true
 for i in 0..10: // invalid code: i is of different type
@@ -266,8 +266,8 @@ if i > 10:
         // exits "if i > 20" block, not "if i > 10" block
         // so basically, "exit" statement here acts like a no-op.
         exit 
-    i++ // does not run
-    Print(42) // does not run
+    i++ // is actually run
+    Print(42) // prints 42
 Print(i) // 20
 ```
 
