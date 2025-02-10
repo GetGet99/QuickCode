@@ -13,7 +13,7 @@ No guarantees that it will be completed. We will have italicized text to state w
 
 As of now, the specs may change at any time.
 
-```
+```rb
 for i in 0..5:
     Print(i)
 Print(10)
@@ -27,7 +27,7 @@ In the code above, `Print(i)` is part of the for loop, while `Print(10)` is not.
 
 QuickCode top level statements is a script. The entry point does not need a `main` method. For example, this can be the entire file.
 
-```
+```rb
 i := 0
 i++
 Print(i)
@@ -44,7 +44,7 @@ The entry point of QuickCode program is a top level statements script.
 Other than the top level statements file type, we will also have non-script files and classes.
 Non-script files hold classes and structs that is put in a given namespace.
 
-```
+```rb
 namespace QuickCode.Example:
     class SampleClass:
         @public 
@@ -65,7 +65,7 @@ No UNIX rule exceptions. Sorry.
 
 ### Comments
 
-```
+```go
 // line comments
 /* block comments */
 ```
@@ -75,7 +75,7 @@ No UNIX rule exceptions. Sorry.
 Comments that exists on lines without statements are treated the same as if that line has empty space (ie. that line can have
 any amount of spaces for indentation)
 
-```
+```go
 i := 0
 if i >= 0:
     j := 0
@@ -90,7 +90,7 @@ if i >= 0:
 
 At any time if the line begins with block comments and there exists a statement after the block comments, the indentation engine will count the indentation before the block comments. For example,
 
-```
+```go
 i := 0
 j := 0
 if i >= 0:
@@ -99,7 +99,7 @@ if i >= 0:
 */  j++
 ```
 or
-```
+```go
 i := 0
 j := 0
 if i >= 0:
@@ -108,7 +108,7 @@ if i >= 0:
 */                  j++
 ```
 is functionally equivalent to:
-```
+```go
 i := 0
 j := 0
 if i >= 0:
@@ -121,7 +121,7 @@ if i >= 0:
 `nop` can be used to declare a no-operation. This may be used to bypass a requirement that blocks
 must have at least a statement in it.
 
-```
+```rb
 i := 0
 if i >= 0:
     nop
@@ -131,7 +131,7 @@ while true
 ```
 
 Note that `nop` may or may not get translated into actual runtime instructions. For example,
-```
+```go
 nop
 nop
 nop
@@ -151,7 +151,7 @@ The example above may generate a very small or very large executable or take ver
 
 QuickCode uses the following syntax for if statements.
 
-```
+```rb
 i := 0
 if i > 0:
     i++
@@ -166,7 +166,7 @@ Print(i)
 
 There are main 3 kinds of loops in QuickCode. It supports `break`, `continue`.
 
-```
+```rb
 while true:
     break
 for i in 0..10:
@@ -179,7 +179,7 @@ while false
 ### Conditional break and continue
 
 Breaks and continue may be conditional. For example,
-```
+```go
 for i in 0..30:
     // skips all odd number
     continue if i % 2 != 0
@@ -188,7 +188,7 @@ for i in 0..30:
     Print(i)
 ```
 This is a shorthand form of
-```
+```go
 for i in 0..30:
     // skips all odd number
     if i % 2 != 0:
@@ -205,7 +205,7 @@ Variable `i` is declared with implicit type from the right hand side.
 The variable `i` is only defined inside the scope, unless it has already been defined outside the scope with the same type.
 
 For example,
-```
+```go
 i := 0
 for i in 0..10:
     break if i == 5
@@ -213,12 +213,12 @@ Print(i) // 5
 ```
 
 However, these codes are not valid QuickCode codes.
-```
+```go
 for i in 0..10:
     break if i == 5
 Print(i) // invalid code: i is not defined in outter scope
 ```
-```
+```go
 i := true
 for i in 0..10: // invalid code: i is of different type
     break if i == 5
@@ -231,7 +231,7 @@ QuickCode has `exit` statement. `exit` statement exits the innermost block
 
 Exiting an if statement skips remaining statements in the if statement
 
-```
+```go
 i := 20
 if i >= 10:
     Print(i) // 20
@@ -246,7 +246,7 @@ Exiting `while`, `do while`, or `for` loop has the same behavior as `break` stat
 
 `exit` on its own may not be very helpful. Therefore, this is where condition comes in.
 
-```
+```go
 i := 20
 if i > 10:
     Print(i) // 20
@@ -258,7 +258,7 @@ Print(i) // 20
 
 Note that unlike `break if condition` or `continue if condition`, `exit if condition` is not equivalent to
 simply using it with a regular if statement to check condition.
-```
+```go
 i := 20
 if i > 10:
     Print(i) // 20
@@ -276,7 +276,7 @@ Print(i) // 20
 Labels in QuickCode can be defined in two ways.
 
 1. via un-indenting
-```
+```rb
 func f:
     i := 0
 $label1:
@@ -286,7 +286,7 @@ $label1:
 ```
 
 2. via `deflb` statement
-```
+```rb
 func f:
     i := 0
     deflb $label1
@@ -306,7 +306,7 @@ Labels name must have `$` prefix and the rest of the name is a valid QuickCode I
 
 *Note: the current implementation only allows backward `goto`s, since it does not require much*
 *declared variables analysis. Forward `goto`s may be supported in the future.*
-```
+```rb
 func f:
     i := 0
 $label1:
@@ -319,7 +319,7 @@ $label1:
 
 Loops and if statements may have labled on them with the following syntax.
 
-```
+```go
 condition := true // any valid boolean expression
 condition2 := true // any valid boolean expression
 if $label1 condition:
@@ -342,7 +342,7 @@ for $label5 i in 1..10:
 
 `goto $labelOnLoop` will transfer control before the loop or if statement is executed.
 In terms of `goto` locations, this is where the actual locations are mapped:
-```
+```go
 condition := true // any valid boolean expression
 condition2 := true // any valid boolean expression
 
@@ -378,7 +378,7 @@ Note that these are not a direct equivalent, see the next section below for `bre
 
 For example,
 
-```
+```go
 // Concept Code: Not fully supported yet
 for $outter i in 0..5:
     l := array[i, i+1, i+2, i+3, i+4]
@@ -401,7 +401,7 @@ if $outter k > 10:
 
 Functions are defined with `func` keyword with the following syntax:
 
-```
+```go
 // defines a function funcName without any arguments and return type
 func funcName:
     // body
@@ -454,18 +454,16 @@ Child function can access any symbols declared before the function is declared.
 
 As QuickCode is currently implemented to generate MSIL, it will map types to MSIL types.
 Currently, the built in types and functions are as follows,
-```
-int - maps to System.Int32
-bool - maps to System.Boolean
 
-Print() - a function, maps to Console.WriteLine()
-```
+- `int` - maps to `System.Int32`
+- `bool` - maps to `System.Boolean`
+- `Print()` - a function, maps to  `System.Console.WriteLine(**kwargs)`
 
 ## String
 
 *Note: Currently, QuickCode, as well as, QuickCode strings only supported ASCII characters. Any unicode characters in the program may lead to undefined behavior.*
 
-```
+```rb
 "Strings!"
 ```
 
@@ -473,14 +471,14 @@ Print() - a function, maps to Console.WriteLine()
 
 *Note: String Interpolation is currently not supported.*
 
-```
+```rb
 i := 0
 Print($"i is equal to {0}")
 ```
 
 ## Array & List
 
-```
+```go
 numarr : arr[int] = arr[1, 2, 3, 4]
 numarr2 : int[] = arr[1, 2, 3, 4] // equivalent
 numlist : list[int] = arr[1, 2, 3, 4]
@@ -494,7 +492,7 @@ Classes exists in the namespace. Classes can contain functions, fields, and prop
 
 Accessibility can be declared via built-in attributes. It is designed this way to keep the function declaration clear.
 
-```
+```kt
 namespace QuickCode.Example:
     class SampleClass:
         field fieldName : int = 0
