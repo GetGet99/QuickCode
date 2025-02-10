@@ -3,7 +3,7 @@ using Get.Parser;
 using Get.PLShared;
 using Get.RegexMachine;
 using Mono.Cecil;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 using QuickCode.AST.TopLevels;
 using QuickCode.MSIL;
 using QuickCode.TypeChecking;

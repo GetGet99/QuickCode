@@ -1,4 +1,4 @@
-﻿using QuickCode.AST.Symbols;
+﻿using QuickCode.Symbols;
 
 namespace QuickCode.AST.Statements;
 

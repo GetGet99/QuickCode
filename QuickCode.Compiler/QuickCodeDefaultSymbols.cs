@@ -1,6 +1,6 @@
 ﻿using Mono.Cecil.Cil;
 using QuickCode.AST.Expressions;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 using QuickCode.MSIL;
 
 namespace QuickCode.Compiler;

@@ -1,6 +1,6 @@
 ﻿using QuickCode.AST;
 using QuickCode.AST.Expressions;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 using System;
 using System.Diagnostics.CodeAnalysis;
 

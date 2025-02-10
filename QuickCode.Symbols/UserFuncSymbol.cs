@@ -2,4 +2,4 @@
 
 namespace QuickCode.Symbols;
 
-public record class UserFuncSymbol(FunctionAST Function, ImmutableArray<(TypeSymbol Type, string Name)> Parameters, TypeSymbol ReturnType) : SingleFuncSymbol(Parameters, ReturnType);
+public record class UserFuncSymbol(object Function, ImmutableArray<(TypeSymbol Type, string Name)> Parameters, TypeSymbol ReturnType) : SingleFuncSymbol(Parameters, ReturnType);

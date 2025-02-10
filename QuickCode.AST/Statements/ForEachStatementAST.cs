@@ -1,5 +1,5 @@
 ﻿using QuickCode.AST.Expressions;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 
 namespace QuickCode.AST.Statements;
 

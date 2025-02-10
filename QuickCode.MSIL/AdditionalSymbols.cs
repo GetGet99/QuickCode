@@ -3,7 +3,7 @@ using Mono.Cecil.Cil;
 using QuickCode.AST.Expressions;
 using System.Collections.Immutable;
 
-namespace QuickCode.AST.Symbols;
+namespace QuickCode.Symbols;
 
 public record class CodeGenUtils(
     ModuleDefinition Module,
@@ -22,7 +22,7 @@ public record class CodeGenUtils(
     TypeDefinition ContainingClass,
     string CurrentScopeNamespace
 );
-public abstract record class NativeFuncSymbol(ImmutableArray<(TypeSymbol Type, string Name)> Parameters, TypeSymbol ReturnType) : FuncSymbol(Parameters, ReturnType)
+public abstract record class NativeFuncSymbol(ImmutableArray<(TypeSymbol Type, string Name)> Parameters, TypeSymbol ReturnType) : SingleFuncSymbol(Parameters, ReturnType)
 {
     /// <summary>
     /// Generaets the code for the given function call.

@@ -1,7 +1,7 @@
 ﻿using QuickCode.AST;
 using QuickCode.AST.Classes;
 using QuickCode.AST.FileProgram;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 using QuickCode.AST.TopLevels;
 using System.Diagnostics;
 

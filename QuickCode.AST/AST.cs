@@ -1,4 +1,4 @@
-﻿using QuickCode.AST.Symbols;
+﻿using QuickCode.Symbols;
 using System;
 using System.Collections.Generic;
 using System.Linq;

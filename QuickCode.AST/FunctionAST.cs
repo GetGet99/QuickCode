@@ -1,7 +1,7 @@
 ﻿using QuickCode.AST.Expressions;
 using QuickCode.AST.FileProgram;
 using QuickCode.AST.Statements;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 using QuickCode.AST.TopLevels;
 
 namespace QuickCode.AST;

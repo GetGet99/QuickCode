@@ -2,7 +2,7 @@
 using QuickCode.AST.Expressions;
 using QuickCode.AST.Expressions.Values;
 using QuickCode.AST.Statements;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 using QuickCode.AST.TopLevels;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -117,7 +117,7 @@ public class QuickCodeTypeChecker
     void TypeCheck(UnaryAST unaryAST, TypeCheckState tc)
     {
         TypeCheck(unaryAST.Expression, tc);
-        if (unaryAST.Expression.Type.Children[unaryAST.Operator] is not FuncSymbol handler)
+        if (unaryAST.Expression.Type.Children[unaryAST.Operator] is not SingleFuncSymbol handler)
         {
             tc.NotImplemented(unaryAST);
             return;
@@ -160,7 +160,7 @@ public class QuickCodeTypeChecker
     {
         TypeCheck(binaryAST.Left, tc);
         TypeCheck(binaryAST.Right, tc);
-        if (binaryAST.Left.Type.Children[binaryAST.Operator] is not FuncSymbol handler)
+        if (binaryAST.Left.Type.Children[binaryAST.Operator] is not SingleFuncSymbol handler)
         {
             tc.NotImplemented(binaryAST);
             return;
@@ -188,13 +188,13 @@ public class QuickCodeTypeChecker
     {
         funcCall.Type = TypeSymbol.Void;
         var symbol = tc.SymbolTable[funcCall.FunctionName.Name];
-        FuncSymbol? funcSymbol;
+        SingleFuncSymbol? funcSymbol;
         if (symbol is null)
         {
             tc.SymbolUndefinedError(funcCall.FunctionName);
             funcSymbol = null;
         }
-        else if (symbol is not FuncSymbol func)
+        else if (symbol is not SingleFuncSymbol func)
         {
             tc.SymbolIsNotFunctionError(funcCall.FunctionName);
             funcSymbol = null;

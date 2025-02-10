@@ -1,7 +1,7 @@
 ﻿using QuickCode.AST.Expressions.Values;
 using QuickCode.AST.Expressions;
 using QuickCode.AST.Statements;
-using QuickCode.AST.Symbols;
+using QuickCode.Symbols;
 using QuickCode.AST.TopLevels;
 using System.Diagnostics.CodeAnalysis;
 using QuickCode.AST;
@@ -170,7 +170,7 @@ public class QuickCodeMSILGen
     {
         // assuming all integer operations for now
         CodeGen(unaryAST.Expression, u);
-        if (unaryAST.Expression.Type.Children[unaryAST.Operator] is not FuncSymbol funcSymbol)
+        if (unaryAST.Expression.Type.Children[unaryAST.Operator] is not SingleFuncSymbol funcSymbol)
         {
             NotImplemented(unaryAST);
             return;
@@ -225,7 +225,7 @@ public class QuickCodeMSILGen
         // assuming all integer operations for now
         CodeGen(binaryAST.Left, u);
         CodeGen(binaryAST.Right, u);
-        if (binaryAST.Left.Type.Children[binaryAST.Operator] is not FuncSymbol funcSymbol)
+        if (binaryAST.Left.Type.Children[binaryAST.Operator] is not SingleFuncSymbol funcSymbol)
         {
             NotImplemented(binaryAST);
             return;
@@ -247,7 +247,7 @@ public class QuickCodeMSILGen
     }
     void CodeGen(FuncCallAST funcCall, CodeGenUtils u)
     {
-        var funcSymbol = (FuncSymbol)u.Symbols[funcCall.FunctionName.Name]!;
+        var funcSymbol = (SingleFuncSymbol)u.Symbols[funcCall.FunctionName.Name]!;
         // generate all arguments
         foreach (var arg in funcCall.Arguments)
             CodeGen(arg, u);
