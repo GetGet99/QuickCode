@@ -1,0 +1,3 @@
+[submodule "Parser"]
+path = Parser
+url = https://github.com/GetGet99/Parser.git
