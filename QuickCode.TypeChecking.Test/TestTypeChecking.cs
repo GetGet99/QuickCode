@@ -1,0 +1,83 @@
+﻿using Get.Lexer;
+using Get.PLShared;
+using Mono.Cecil.Cil;
+using QuickCode.AST;
+using QuickCode.AST.FileProgram;
+using QuickCode.AST.Symbols;
+using QuickCode.AST.TopLevels;
+using QuickCode.Compiler;
+using System.Text;
+
+namespace QuickCode.TypeChecking.Test
+{
+    [TestClass]
+    public sealed class TestTypeChecking
+    {
+        [TestMethod]
+        public void TestAnalysis()
+        {
+            var (prog, gs) = CompileFile("""
+                namespace NS:
+                    class SampleClass:
+                        i : int = 0
+                        j : int = 1
+                        func PrintMe:
+                            Print(this.i)
+                            Print(this.j)
+                """);
+            if (gs["NS"] is not NamespaceSymbol ns)
+            {
+                Assert.Fail();
+                return;
+            }
+            if (ns["SampleClass"] is not TypeSymbol sampleClass)
+            {
+                Assert.Fail();
+                return;
+            }
+            if (sampleClass.Children["i"] is not FieldSymbol i)
+            {
+                Assert.Fail();
+                return;
+            }
+            Assert.AreEqual(TypeSymbol.Int32, i.Type);
+            if (sampleClass.Children["j"] is not FieldSymbol j)
+            {
+                Assert.Fail();
+                return;
+            }
+            Assert.AreEqual(TypeSymbol.Int32, j.Type);
+            if (sampleClass.Children["PrintMe"] is not UserFuncSymbol printme)
+            {
+                Assert.Fail();
+                return;
+            }
+            Assert.AreEqual(1, printme.Parameters.Length);
+            Assert.AreEqual((sampleClass, "this"), printme.Parameters[0]);
+        }
+        readonly static QuickCodeParser Parser = new();
+        (QuickCodeFileProgramAST program, GlobalSymbols symbols) CompileFile(string program)
+        {
+            var lexer = new QuickCodeLexer(new StreamSeeker(new MemoryStream(Encoding.UTF8.GetBytes(program))));
+            var tokens =
+                lexer.GetTokens()
+                .Prepend(new ControlToken(QuickCodeLexer.Tokens.CONTROLNORMALFILE));
+
+            var prog = (QuickCodeFileProgramAST)Parser.Parse(tokens);
+            GlobalSymbols gs = new();
+            QuickCodeAnalyzer.Analyze(
+                toplevel: null,
+                [prog],
+                gs,
+                QuickCodeDefaultSymbols.Singleton
+            );
+            return (prog, gs);
+        }
+        record class ControlToken(QuickCodeLexer.Tokens TokenType) : IToken<QuickCodeLexer.Tokens>
+        {
+            public Position Start => default;
+
+            public Position End => default;
+        }
+    }
+}
