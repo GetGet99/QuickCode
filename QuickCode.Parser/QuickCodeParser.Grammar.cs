@@ -31,8 +31,8 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
     public enum NonTerminal
     {
         [Type<QuickCodeAST>]
-        [Rule(Terminal.CONTROLTOPLEVELSTATEMENTFILE, TopLevelProgram, AS, "value", nameof(Identity))]
-        //[Rule(Terminal.CONTROLNORMALFILE, FileProgram, AS, "value", nameof(Identity))]
+        [Rule(Terminal.CONTROLTOPLEVELSTATEMENTFILE, TopLevelProgram, AS, VALUE, IDENTITY)]
+        //[Rule(Terminal.CONTROLNORMALFILE, FileProgram, AS, VALUE, IDENTITY)]
         Program,
         
         
@@ -44,11 +44,11 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Type<ListAST<ITopLevelDeclarable>>]
         [Rule(nameof(EmptyTopLevelDeclarableList))]
         [Rule(TopLevelProgramComponents, AS, "list", TopLevelProgramComponent, AS, "value", nameof(Append))]
-        [Rule(TopLevelProgramComponents, AS, "value", Terminal.Nop, Terminal.Newline, nameof(Identity))]
+        [Rule(TopLevelProgramComponents, AS, VALUE, Terminal.Nop, Terminal.Newline, IDENTITY)]
         TopLevelProgramComponents,
         [Type<ITopLevelDeclarable>]
-        [Rule(Statement, AS, "value", nameof(Identity))]
-        [Rule(FunctionDefinition, AS, "value", nameof(Identity))]
+        [Rule(Statement, AS, VALUE, IDENTITY)]
+        [Rule(FunctionDefinition, AS, VALUE, IDENTITY)]
         TopLevelProgramComponent,
 
 
@@ -86,8 +86,8 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         //[Type<ListAST<IClassDeclarable>>]
         //ClassDeclarables,
         //[Type<IClassDeclarable>]
-        //[Rule(FieldDeclaration, AS, "value", nameof(Identity))]
-        //[Rule(FunctionDefinition, AS, "value", nameof(Identity))]
+        //[Rule(FieldDeclaration, AS, "value", IDENTITY)]
+        //[Rule(FunctionDefinition, AS, "value", IDENTITY)]
         //ClassDeclarable,
         //[Type<FieldDeclStatementAST>]
         //[Rule(Terminal.Identifier, AS, nameof(FieldDeclStatementAST.Name),
@@ -107,7 +107,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(Statement, AS, "value", nameof(Single))]
         [Rule(Terminal.Nop, Terminal.Newline, nameof(EmptyStatementList))]
         [Rule(BlockStatements, AS, "list", Statement, AS, "value", nameof(Append))]
-        [Rule(BlockStatements, AS, "value", Terminal.Nop, Terminal.Newline, nameof(Identity))]
+        [Rule(BlockStatements, AS, VALUE, Terminal.Nop, Terminal.Newline, IDENTITY)]
         BlockStatements,
         /// <summary>
         /// Represents list of 1+ statements. This list can empty if nop is used. Otherwise this list is not empty.
@@ -131,9 +131,9 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(
             Terminal.Colon, Terminal.Newline,
             Terminal.Indent,
-                BlockStatements, AS, "value",
+                BlockStatements, AS, VALUE,
             Terminal.Dedent,
-            nameof(Identity))]
+            IDENTITY)]
         [Rule(
             Terminal.Colon, Terminal.Nop, Terminal.Newline,
             nameof(EmptyStatementList))]
@@ -208,7 +208,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             Expression, AS, nameof(ForEachStatementAST.List),
             BlockStatementsWithColonIndentDedent, AS, nameof(ForEachStatementAST.Block),
             typeof(ForEachStatementAST))]
-        [Rule(SimpleStatement, AS, "value", nameof(Identity))]
+        [Rule(SimpleStatement, AS, VALUE, IDENTITY)]
         // gotos and labels
         [Rule(
             Terminal.Dedent,
@@ -247,8 +247,8 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             nameof(CreateElseIfElsePart))]
         [Rule(
             Terminal.Else,
-            BlockStatementsWithColonIndentDedent, AS, "value",
-            nameof(Identity))]
+            BlockStatementsWithColonIndentDedent, AS, VALUE,
+            IDENTITY)]
         [Rule(nameof(EmptyStatementList))]
         ElsePart,
 
@@ -373,7 +373,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(Terminal.Integer, AS, nameof(Int32ValueAST.Value), typeof(Int32ValueAST))]
         [Rule(Terminal.String, AS, nameof(StringValueAST.Value), typeof(StringValueAST))]
         [Rule(Terminal.Boolean, AS, nameof(BooleanValueAST.Value), typeof(BooleanValueAST))]
-        [Rule(Terminal.Identifier, AS, "value", nameof(Identity))]
+        [Rule(Terminal.Identifier, AS, VALUE, IDENTITY)]
 
         // Function Call
         [Rule(Terminal.Identifier, AS, nameof(FuncCallAST.FunctionName),
@@ -422,26 +422,26 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         // Optional Label
         [Type<IdentifierAST>]
         [Rule(nameof(NullIdentifier))]
-        [Rule(Terminal.DollarSign, Terminal.Identifier, AS, "value", nameof(Identity))]
+        [Rule(Terminal.DollarSign, Terminal.Identifier, AS, VALUE, IDENTITY)]
         OptionalLabel,
 
 
         // Optional If Tag
         [Type<ExpressionAST>]
         [Rule(nameof(NullExpression))]
-        [Rule(Terminal.If, Expression, AS, "value", nameof(Identity))]
+        [Rule(Terminal.If, Expression, AS, VALUE, IDENTITY)]
         OptionalIfTag,
 
         // Optional Expression
         [Type<ExpressionAST>]
         [Rule(nameof(NullExpression))]
-        [Rule(Expression, AS, "value", nameof(Identity))]
+        [Rule(Expression, AS, VALUE, IDENTITY)]
         OptionalExpression,
 
         // Arguments List
         [Type<ListAST<ExpressionAST>>]
         [Rule(nameof(EmptyExpressionList))]
-        [Rule(NonEmptyCommaSepratedExpression, AS, "value", nameof(Identity))]
+        [Rule(NonEmptyCommaSepratedExpression, AS, VALUE, IDENTITY)]
         CommaSeparatedExpression,
         [Type<ListAST<ExpressionAST>>]
         [Rule(Expression, AS, "value", nameof(Single))]
@@ -476,9 +476,9 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(CommaSeparatedType, AS, "list", Terminal.Comma, Type, AS, "value", nameof(Append))]
         CommaSeparatedType,
         [Type<IdentifierAST>]
-        [Rule(Terminal.List, AS, "value", nameof(Identity))]
-        [Rule(Terminal.Array, AS, "value", nameof(Identity))]
-        [Rule(Terminal.Identifier, AS, "value", nameof(Identity))]
+        [Rule(Terminal.List, AS, VALUE, IDENTITY)]
+        [Rule(Terminal.Array, AS, VALUE, IDENTITY)]
+        [Rule(Terminal.Identifier, AS, VALUE, IDENTITY)]
         IdentifierOrReserved
     }
     static IdentifierAST? NullIdentifier()
