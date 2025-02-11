@@ -42,8 +42,8 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(TopLevelProgramComponents, AS, nameof(TopLevelQuickCodeProgramAST.TopLevelProgramComponentASTs), typeof(TopLevelQuickCodeProgramAST))]
         TopLevelProgram,
         [Type<ListAST<ITopLevelDeclarable>>]
-        [Rule(nameof(EmptyTopLevelDeclarableList))]
-        [Rule(TopLevelProgramComponents, AS, "list", TopLevelProgramComponent, AS, "value", nameof(Append))]
+        [Rule(EMPTYLIST)]
+        [Rule(TopLevelProgramComponents, AS, LIST, TopLevelProgramComponent, AS, VALUE, APPENDLIST)]
         [Rule(TopLevelProgramComponents, AS, VALUE, Terminal.Nop, Terminal.Newline, IDENTITY)]
         TopLevelProgramComponents,
         [Type<ITopLevelDeclarable>]
@@ -104,9 +104,9 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         /// Represents list of 1+ statements. This list can empty if nop is used. Otherwise this list is not empty.
         /// </summary>
         [Type<ListAST<StatementAST>>]
-        [Rule(Statement, AS, "value", nameof(Single))]
-        [Rule(Terminal.Nop, Terminal.Newline, nameof(EmptyStatementList))]
-        [Rule(BlockStatements, AS, "list", Statement, AS, "value", nameof(Append))]
+        [Rule(Statement, AS, VALUE, SINGLELIST)]
+        [Rule(Terminal.Nop, Terminal.Newline, EMPTYLIST)]
+        [Rule(BlockStatements, AS, LIST, Statement, AS, VALUE, APPENDLIST)]
         [Rule(BlockStatements, AS, VALUE, Terminal.Nop, Terminal.Newline, IDENTITY)]
         BlockStatements,
         /// <summary>
@@ -136,10 +136,9 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             IDENTITY)]
         [Rule(
             Terminal.Colon, Terminal.Nop, Terminal.Newline,
-            nameof(EmptyStatementList))]
+            EMPTYLIST)]
         [Rule(
-            Terminal.Colon, SimpleStatement, AS, "value",
-            nameof(Single))]
+            Terminal.Colon, SimpleStatement, AS, VALUE, SINGLELIST)]
         BlockStatementsWithColonIndentDedent,
 
 
@@ -249,7 +248,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             Terminal.Else,
             BlockStatementsWithColonIndentDedent, AS, VALUE,
             IDENTITY)]
-        [Rule(nameof(EmptyStatementList))]
+        [Rule(EMPTYLIST)]
         ElsePart,
 
 
@@ -421,43 +420,43 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
 
         // Optional Label
         [Type<IdentifierAST>]
-        [Rule(nameof(NullIdentifier))]
+        [Rule(WITHPARAM, VALUE, null, IDENTITY)]
         [Rule(Terminal.DollarSign, Terminal.Identifier, AS, VALUE, IDENTITY)]
         OptionalLabel,
 
 
         // Optional If Tag
         [Type<ExpressionAST>]
-        [Rule(nameof(NullExpression))]
+        [Rule(WITHPARAM, VALUE, null, IDENTITY)]
         [Rule(Terminal.If, Expression, AS, VALUE, IDENTITY)]
         OptionalIfTag,
 
         // Optional Expression
         [Type<ExpressionAST>]
-        [Rule(nameof(NullExpression))]
+        [Rule(WITHPARAM, VALUE, null, IDENTITY)]
         [Rule(Expression, AS, VALUE, IDENTITY)]
         OptionalExpression,
 
         // Arguments List
         [Type<ListAST<ExpressionAST>>]
-        [Rule(nameof(EmptyExpressionList))]
+        [Rule(EMPTYLIST)]
         [Rule(NonEmptyCommaSepratedExpression, AS, VALUE, IDENTITY)]
         CommaSeparatedExpression,
         [Type<ListAST<ExpressionAST>>]
-        [Rule(Expression, AS, "value", nameof(Single))]
-        [Rule(NonEmptyCommaSepratedExpression, AS, "list", Terminal.Comma, Expression, AS, "value", nameof(Append))]
+        [Rule(Expression, AS, VALUE, SINGLELIST)]
+        [Rule(NonEmptyCommaSepratedExpression, AS, LIST, Terminal.Comma, Expression, AS, VALUE, APPENDLIST)]
         NonEmptyCommaSepratedExpression,
 
         // Parameters List
         [Type<ListAST<ParameterAST>>]
-        [Rule(nameof(EmptyParameterList))]
+        [Rule(EMPTYLIST)]
         [Rule(UntypedParametersList, AS, "untypedParams", Terminal.Colon, Type, AS, "type", nameof(UntypedToTypedParams))]
         [Rule(ParametersList, AS, "list1", Terminal.Comma, ParametersList, AS, "list2", nameof(Combine))]
         ParametersList,
         // Untyped Parameters List
         [Type<ListAST<IdentifierAST>>]
-        [Rule(Terminal.Identifier, AS, "value", nameof(Single))]
-        [Rule(UntypedParametersList, AS, "list", Terminal.Comma, Terminal.Identifier, AS, "value", nameof(Append))]
+        [Rule(Terminal.Identifier, AS, VALUE, SINGLELIST)]
+        [Rule(UntypedParametersList, AS, LIST, Terminal.Comma, Terminal.Identifier, AS, VALUE, APPENDLIST)]
         UntypedParametersList,
 
         // Types
@@ -472,8 +471,8 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         )]
         Type,
         [Type<ListAST<TypeAST>>]
-        [Rule(Type, AS, "value", nameof(Single))]
-        [Rule(CommaSeparatedType, AS, "list", Terminal.Comma, Type, AS, "value", nameof(Append))]
+        [Rule(Type, AS, VALUE, SINGLELIST)]
+        [Rule(CommaSeparatedType, AS, LIST, Terminal.Comma, Type, AS, VALUE, APPENDLIST)]
         CommaSeparatedType,
         [Type<IdentifierAST>]
         [Rule(Terminal.List, AS, VALUE, IDENTITY)]
@@ -481,30 +480,16 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(Terminal.Identifier, AS, VALUE, IDENTITY)]
         IdentifierOrReserved
     }
-    static IdentifierAST? NullIdentifier()
-        => null;
-    static ExpressionAST? NullExpression()
-        => null;
     static ListAST<StatementAST> CreateElseIfElsePart(ExpressionAST cond, IdentifierAST? label, ListAST<StatementAST> trueStmts, ListAST<StatementAST> elsePart)
         => [
             new IfStatementAST(cond, trueStmts, elsePart, label)
         ];
-    static T Identity<T>(T value) => value;
-    static ListAST<ITopLevelDeclarable> EmptyTopLevelDeclarableList() => [];
-    static ListAST<StatementAST> EmptyStatementList() => [];
-    static ListAST<ExpressionAST> EmptyExpressionList() => [];
-    static ListAST<ParameterAST> EmptyParameterList() => [];
     static ListAST<ParameterAST> UntypedToTypedParams(ListAST<IdentifierAST> untypedParams, TypeAST type)
     {
-        ListAST<ParameterAST> typedParams = new();
+        ListAST<ParameterAST> typedParams = [];
         foreach (var id in untypedParams)
             typedParams.Add(new(id, type));
         return typedParams;
-    }
-    static ListAST<T> Append<T>(ListAST<T> list, T value)
-    {
-        list.Add(value);
-        return list;
     }
     static ListAST<T> Combine<T>(ListAST<T> list1, ListAST<T> list2)
     {
@@ -512,14 +497,6 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             list1.Add(val);
         return list1;
     }
-    static ListAST<T> Single<T>(T value) => [value];
-    static ListAST<T> AppendOrNop<T>(ListAST<T> list, T? value)
-    {
-        if (value is not null)
-            list.Add(value);
-        return list;
-    }
-    static ListAST<T> SingleOrEmpty<T>(T? value) => value is null ? [] : [value];
     public QuickCodeAST Parse(IEnumerable<IToken<Terminal>> inputTerminals)
     {
         IEnumerable<ITerminalValue> TerminalValues()
