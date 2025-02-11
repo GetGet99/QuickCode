@@ -8,8 +8,7 @@ QuickCode is designed to simplify coding experiences, making it faster to code.
 
 QuickCode is an indentation-based language. Indentation is the key in this language.
 
-The compiler will be released and open sourced once it reaches a point where the language becomes usable enough.
-No guarantees that it will be completed. We will have italicized text to state which is not implemented yet.
+No guarantees that everything will be completed. We will have italicized text to state which is not implemented yet.
 
 As of now, the specs may change at any time.
 
