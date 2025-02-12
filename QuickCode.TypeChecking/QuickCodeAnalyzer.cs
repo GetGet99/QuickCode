@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace QuickCode.TypeChecking;
 using static TypeCheckHelper;
 
-public class QuickCodeAnalyzer
+public static class QuickCodeAnalyzer
 {
     public static void Analyze(
         TopLevelQuickCodeProgramAST? toplevel,
@@ -33,7 +33,18 @@ public class QuickCodeAnalyzer
     }
     static void AnalyzePhase1(QuickCodeNamespaceAST ns, TypeAnalyzerState ta)
     {
-        foreach (var cls in ns.Classes)
+        var dns = ta.DeclaredNamespace.TryGetOrCreateNamespace(
+            string.Join('.', from n in ns.Name select n.Name)
+        );
+        if (dns is null)
+        {
+            ta.TypeCheckError(ns, "The current name already exists as something other than namespace.");
+            // error handling not implemented
+            ta.NotImplemented(ns);
+            return;
+        }
+        ta = ta with { DeclaredNamespace = dns };
+        foreach (var cls in ns.Types)
             AnalyzePhase1(cls, ta);
     }
     static void AnalyzePhase1(QuickCodeClassAST cls, TypeAnalyzerState ta)
@@ -50,7 +61,18 @@ public class QuickCodeAnalyzer
     }
     static void AnalyzePhase2(QuickCodeNamespaceAST ns, TypeAnalyzerState ta)
     {
-        foreach (var cls in ns.Classes)
+        var dns = ta.DeclaredNamespace.TryGetOrCreateNamespace(
+            string.Join('.', from n in ns.Name select n.Name)
+        );
+        if (dns is null)
+        {
+            ta.TypeCheckError(ns, "The current name already exists as something other than namespace.");
+            // error handling not implemented
+            ta.NotImplemented(ns);
+            return;
+        }
+        ta = ta with { DeclaredNamespace = dns };
+        foreach (var cls in ns.Types)
             AnalyzePhase2(cls, ta);
     }
     static void AnalyzePhase2(QuickCodeClassAST cls, TypeAnalyzerState ta)

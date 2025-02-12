@@ -14,7 +14,7 @@ namespace QuickCode;
 [Parser(Program, UseGetLexerTypeInformation = true)]
 [Precedence(
     // for now
-    Terminal.Increment, Terminal.Decrement, Associativity.Left,
+    Terminal.Increment, Terminal.Decrement, Terminal.Dot, Associativity.Left,
     //Terminal.PostfixIncDecPrecedence, Associativity.Left,
     //Terminal.PrefixIncDecPrecedence, Associativity.Right,
     Terminal.Range, Associativity.Left,
@@ -32,7 +32,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
     {
         [Type<QuickCodeAST>]
         [Rule(Terminal.CONTROLTOPLEVELSTATEMENTFILE, TopLevelProgram, AS, VALUE, IDENTITY)]
-        //[Rule(Terminal.CONTROLNORMALFILE, FileProgram, AS, VALUE, IDENTITY)]
+        [Rule(Terminal.CONTROLNORMALFILE, FileProgram, AS, VALUE, IDENTITY)]
         Program,
         
         
@@ -52,52 +52,64 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         TopLevelProgramComponent,
 
 
-        //[Type<QuickCodeFileProgramAST>]
-        //[Rule(NamespaceList, AS, nameof(QuickCodeFileProgramAST.Namespaces), typeof(QuickCodeFileProgramAST))]
-        //FileProgram,
-        //[Type<ListAST<QuickCodeNamespaceAST>>]
-        //NamespaceList,
-        //[Type<QuickCodeNamespaceAST>]
-        //[Rule(NamespaceList, AS, nameof(QuickCodeNamespaceAST.Classes), typeof(QuickCodeNamespaceAST))]
-        ////[Rule(
-        ////    Terminal.Namespace,
-        ////    //Terminal.Identifier, AS, nameof(QuickCodeClassAST.Name),
-        ////    Terminal.Colon, Terminal.Newline,
-        ////    Terminal.Indent,
-        ////        //ClassDeclarables, AS, nameof(QuickCodeClassAST.Declarables),
-        ////    Terminal.Dedent,
-        ////    typeof(QuickCodeClassAST)
-        ////)]
-        //Namespace,
-        //[Type<ListAST<QuickCodeClassAST>>]
-        
-        //NamespaceDeclarableList,
-        //[Type<QuickCodeClassAST>]
-        //[Rule(
-        //    Terminal.Class,
-        //    Terminal.Identifier, AS, nameof(QuickCodeClassAST.Name),
-        //    Terminal.Colon, Terminal.Newline,
-        //    Terminal.Indent,
-        //        ClassDeclarables, AS, nameof(QuickCodeClassAST.Declarables),
-        //    Terminal.Dedent,
-        //    typeof(QuickCodeClassAST)
-        //)]
-        //Class,
-        //[Type<ListAST<IClassDeclarable>>]
-        //ClassDeclarables,
-        //[Type<IClassDeclarable>]
-        //[Rule(FieldDeclaration, AS, "value", IDENTITY)]
-        //[Rule(FunctionDefinition, AS, "value", IDENTITY)]
-        //ClassDeclarable,
-        //[Type<FieldDeclStatementAST>]
-        //[Rule(Terminal.Identifier, AS, nameof(FieldDeclStatementAST.Name),
-        //    Terminal.Colon,
-        //    Type, AS, nameof(FieldDeclStatementAST.DeclType),
-        //    Terminal.Assign,
-        //    Expression, AS, nameof(FieldDeclStatementAST.Expression),
-        //    Terminal.Newline,
-        //    typeof(FieldDeclStatementAST))]
-        //FieldDeclaration,
+        [Type<QuickCodeFileProgramAST>]
+        [Rule(NamespaceList, AS, nameof(QuickCodeFileProgramAST.Namespaces), typeof(QuickCodeFileProgramAST))]
+        FileProgram,
+        [Type<ListAST<QuickCodeNamespaceAST>>]
+        [Rule(Terminal.Nop, Terminal.Newline, EMPTYLIST)]
+        [Rule(Namespace, AS, VALUE, SINGLELIST)]
+        [Rule(NamespaceList, AS, LIST, Namespace, AS, VALUE, APPENDLIST)]
+        NamespaceList,
+        [Type<QuickCodeNamespaceAST>]
+        [Rule(
+            Terminal.Namespace,
+            // list of identifiers
+            DotSeparatedIdentifier, AS, nameof(QuickCodeNamespaceAST.Name),
+            Terminal.Colon, Terminal.Newline,
+            Terminal.Indent,
+            NamespaceDeclarableList, AS, nameof(QuickCodeNamespaceAST.Types),
+            Terminal.Dedent,
+            typeof(QuickCodeNamespaceAST)
+        )]
+        Namespace,
+
+        [Type<ListAST<QuickCodeClassAST>>]
+        [Rule(Terminal.Nop, Terminal.Newline, EMPTYLIST)]
+        [Rule(NamespaceDeclarable, AS, VALUE, SINGLELIST)]
+        [Rule(NamespaceDeclarableList, AS, LIST, NamespaceDeclarable, AS, VALUE, APPENDLIST)]
+        NamespaceDeclarableList,
+        [Type<QuickCodeClassAST>]
+        [Rule(Class, AS, VALUE, IDENTITY)]
+        NamespaceDeclarable,
+        [Type<QuickCodeClassAST>]
+        [Rule(
+            Terminal.Class,
+            Type, AS, nameof(QuickCodeClassAST.Name),
+            Terminal.Colon, Terminal.Newline,
+            Terminal.Indent,
+                ClassDeclarables, AS, nameof(QuickCodeClassAST.Declarables),
+            Terminal.Dedent,
+            typeof(QuickCodeClassAST)
+        )]
+        Class,
+        [Type<ListAST<IClassDeclarable>>]
+        [Rule(Terminal.Nop, Terminal.Newline, EMPTYLIST)]
+        [Rule(ClassDeclarable, AS, VALUE, SINGLELIST)]
+        [Rule(ClassDeclarables, AS, LIST, ClassDeclarable, AS, VALUE, APPENDLIST)]
+        ClassDeclarables,
+        [Type<IClassDeclarable>]
+        [Rule(FieldDeclaration, AS, VALUE, IDENTITY)]
+        [Rule(FunctionDefinition, AS, VALUE, IDENTITY)]
+        ClassDeclarable,
+        [Type<FieldDeclStatementAST>]
+        [Rule(Terminal.Identifier, AS, nameof(FieldDeclStatementAST.Name),
+            Terminal.Colon,
+            Type, AS, nameof(FieldDeclStatementAST.DeclType),
+            Terminal.Assign,
+            Expression, AS, nameof(FieldDeclStatementAST.Expression),
+            Terminal.Newline,
+            typeof(FieldDeclStatementAST))]
+        FieldDeclaration,
 
 
         /// <summary>
@@ -258,74 +270,74 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
 
         // Binary Expressions
         [Type<ExpressionAST>]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Plus,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Add,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Minus,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Subtract,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Multiply,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Multiply,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Divide,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Divide,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Modulo,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Modulo,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.LessThan,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.LessThan,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.LessThanOrEqual,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.LessThanOrEqual,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.MoreThan,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.MoreThan,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.MoreThanOrEqual,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.MoreThanOrEqual,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Equal,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Equal,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.NotEqual,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.NotEqual,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Range,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Range,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.And,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.And,
             typeof(BinaryAST))]
-        [Rule(Expression, AS, nameof(BinaryAST.Left),
+        [Rule(CExpression, AS, nameof(BinaryAST.Left),
             Terminal.Or,
-            Expression, AS, nameof(BinaryAST.Right),
+            CExpression, AS, nameof(BinaryAST.Right),
             WITHPARAM, nameof(BinaryAST.Operator), BinaryOperators.Or,
             typeof(BinaryAST))]
 
@@ -333,12 +345,12 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         // Unary Expressions
         [Rule(
             Terminal.Plus,
-            Expression, AS, nameof(UnaryAST.Expression),
+            CExpression, AS, nameof(UnaryAST.Expression),
             WITHPARAM, nameof(UnaryAST.Operator), UnaryOperators.Identity,
             typeof(UnaryAST))]
         [Rule(
             Terminal.Minus,
-            Expression, AS, nameof(UnaryAST.Expression),
+            CExpression, AS, nameof(UnaryAST.Expression),
             WITHPARAM, nameof(UnaryAST.Operator), UnaryOperators.Negate,
             typeof(UnaryAST))]
         [Rule(
@@ -365,7 +377,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         // Assign
         [Rule(Terminal.Identifier, AS, nameof(AssignAST.Left),
             Terminal.Assign,
-            Expression, AS, nameof(AssignAST.Right),
+            CExpression, AS, nameof(AssignAST.Right),
             typeof(AssignAST))]
         
         // Constants and Identifier
@@ -380,6 +392,11 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             CommaSeparatedExpression, AS, nameof(FuncCallAST.Arguments),
             Terminal.CloseBracket,
             typeof(FuncCallAST))]
+        [Rule(MemberExpression, AS, nameof(MethodCallAST.FunctionName),
+            Terminal.OpenBracket,
+            CommaSeparatedExpression, AS, nameof(MethodCallAST.Arguments),
+            Terminal.CloseBracket,
+            typeof(MethodCallAST))]
         // list and array creation
         [Rule(Terminal.List, Terminal.OpenSquareBracket,
             CommaSeparatedExpression, AS, nameof(ListDeclarationAST.Elements),
@@ -389,7 +406,22 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             CommaSeparatedExpression, AS, nameof(ArrayDeclarationWithValuesAST.Elements),
             Terminal.CloseSquareBracket,
             typeof(ArrayDeclarationWithValuesAST))]
+        // (expr)
+        [Rule(Terminal.OpenBracket, Expression, AS, VALUE, Terminal.CloseBracket, IDENTITY)]
+
+        // Members
+        [Rule(MemberExpression, AS, VALUE, IDENTITY)]
+        CExpression,
+        [Type<ExpressionAST>]
+        [Rule(CExpression, AS, VALUE, IDENTITY)]
         Expression,
+        [Type<MemberExpressionAST>]
+        [Rule(
+            CExpression, AS, nameof(MemberExpressionAST.Expression),
+            Terminal.Dot,
+            Terminal.Identifier, AS, nameof(MemberExpressionAST.Member),
+            typeof(MemberExpressionAST))]
+        MemberExpression,
 
         [Type<FunctionAST>]
 
@@ -474,6 +506,10 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(Type, AS, VALUE, SINGLELIST)]
         [Rule(CommaSeparatedType, AS, LIST, Terminal.Comma, Type, AS, VALUE, APPENDLIST)]
         CommaSeparatedType,
+        [Type<ListAST<IdentifierAST>>]
+        [Rule(Terminal.Identifier, AS, VALUE, SINGLELIST)]
+        [Rule(DotSeparatedIdentifier, AS, LIST, Terminal.Dot, Terminal.Identifier, AS, VALUE, APPENDLIST)]
+        DotSeparatedIdentifier,
         [Type<IdentifierAST>]
         [Rule(Terminal.List, AS, VALUE, IDENTITY)]
         [Rule(Terminal.Array, AS, VALUE, IDENTITY)]

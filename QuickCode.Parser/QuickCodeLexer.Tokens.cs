@@ -75,6 +75,8 @@ public partial class QuickCodeLexer(ITextSeekable text) : LexerBase<QuickCodeLex
         For,
         [Regex(@"in", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
         In,
+        [Regex(@"namespace", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        Namespace,
         [Regex(@"break", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
         Break,
         [Regex(@"continue", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
@@ -92,6 +94,8 @@ public partial class QuickCodeLexer(ITextSeekable text) : LexerBase<QuickCodeLex
         DollarSign,
         [Regex(@":", State = (int)LexerStates.Code)]
         Colon,
+        [Regex(@"\.", State = (int)LexerStates.Code)]
+        Dot,
         [Regex(@",", State = (int)LexerStates.Code)]
         Comma,
         [Regex(@"->", State = (int)LexerStates.Code)]

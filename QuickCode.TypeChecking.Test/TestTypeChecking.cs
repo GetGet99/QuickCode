@@ -1,11 +1,8 @@
 ﻿using Get.Lexer;
 using Get.PLShared;
-using Mono.Cecil.Cil;
-using QuickCode.AST;
 using QuickCode.AST.FileProgram;
-using QuickCode.AST.Symbols;
-using QuickCode.AST.TopLevels;
 using QuickCode.Compiler;
+using QuickCode.Symbols;
 using System.Text;
 
 namespace QuickCode.TypeChecking.Test
