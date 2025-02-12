@@ -59,3 +59,48 @@ public record class PrintFuncSymbol : NativeFuncSymbol
         }
     }
 }
+public record class PrintIntFuncSymbol : NativeFuncSymbol
+{
+    public static PrintIntFuncSymbol Singleton { get; } = new();
+    private PrintIntFuncSymbol() : base(
+        [(TypeSymbol.Int32, "value")],
+        TypeSymbol.Void
+    )
+    {
+
+    }
+    public override void CodeGen(FuncCallAST funcCall, CodeGenUtils u)
+    {
+        u.IL.Emit(OpCodes.Call, u.Module.ImportReference(typeof(Console).GetMethod("WriteLine", [typeof(int)])!));
+    }
+}
+public record class PrintBoolFuncSymbol : NativeFuncSymbol
+{
+    public static PrintBoolFuncSymbol Singleton { get; } = new();
+    private PrintBoolFuncSymbol() : base(
+        [(TypeSymbol.Boolean, "value")],
+        TypeSymbol.Void
+    )
+    {
+
+    }
+    public override void CodeGen(FuncCallAST funcCall, CodeGenUtils u)
+    {
+        u.IL.Emit(OpCodes.Call, u.Module.ImportReference(typeof(Console).GetMethod("WriteLine", [typeof(bool)])!));
+    }
+}
+public record class PrintStringFuncSymbol : NativeFuncSymbol
+{
+    public static PrintStringFuncSymbol Singleton { get; } = new();
+    private PrintStringFuncSymbol() : base(
+        [(TypeSymbol.String, "value")],
+        TypeSymbol.Void
+    )
+    {
+
+    }
+    public override void CodeGen(FuncCallAST funcCall, CodeGenUtils u)
+    {
+        u.IL.Emit(OpCodes.Call, u.Module.ImportReference(typeof(Console).GetMethod("WriteLine", [typeof(string)])!));
+    }
+}

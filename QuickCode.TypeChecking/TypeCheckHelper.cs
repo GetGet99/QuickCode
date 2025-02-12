@@ -24,6 +24,8 @@ internal static class TypeCheckHelper
         => s.TypeCheckError(node, $"{node.Name} is already declared in the current scope.");
     public static void SymbolIsNotTypeError(this ITypeCheckErrorState s, IdentifierAST node)
         => s.TypeCheckError(node, $"{node.Name} is not a type.");
+    public static void NoProperOverloadedError(this ITypeCheckErrorState s, IdentifierAST node)
+        => s.TypeCheckError(node, $"Functions {node.Name} has no overload that can accept the given types.");
     public static void SymbolIsNotFunctionError(this ITypeCheckErrorState s, IdentifierAST node)
         => s.TypeCheckError(node, $"{node.Name} is not a function.");
     public static void TypeMismatchError(this ITypeCheckErrorState s, AST.AST node, TypeSymbol expected, TypeSymbol actual)

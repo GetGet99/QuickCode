@@ -14,7 +14,11 @@ public class QuickCodeDefaultSymbols : SymbolTable
         this["object"] = TypeSymbol.Object;
         this["bool"] = TypeSymbol.Boolean;
         this["void"] = TypeSymbol.Void;
-        this["Print"] = PrintFuncSymbol.Singleton;
+        this["Print"] = new OverloadedFuncSymbol([
+            PrintIntFuncSymbol.Singleton,
+            PrintBoolFuncSymbol.Singleton,
+            PrintStringFuncSymbol.Singleton
+        ]);
         TypeSymbol.Int32.Children[UnaryOperators.Identity] = II(u => { /* no-op */ });
         TypeSymbol.Int32.Children[UnaryOperators.Negate] = II(OpCodes.Neg);
         TypeSymbol.Int32.Children[BinaryOperators.Add] = III(OpCodes.Add);

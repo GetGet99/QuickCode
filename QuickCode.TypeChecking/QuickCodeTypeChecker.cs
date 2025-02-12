@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Emit;
+using System.Collections.Immutable;
 
 namespace QuickCode.TypeChecking;
 using static TypeCheckHelper;
@@ -171,7 +172,8 @@ public class QuickCodeTypeChecker
         ))
         {
             binaryAST.Type = handler.ReturnType;
-        } else
+        }
+        else
         {
             binaryAST.Type = TypeSymbol.Object;
         }
@@ -186,6 +188,11 @@ public class QuickCodeTypeChecker
     }
     void TypeCheck(FuncCallAST funcCall, TypeCheckState tc)
     {
+        foreach (var argument in funcCall.Arguments)
+        {
+            TypeCheck(argument, tc);
+        }
+
         funcCall.Type = TypeSymbol.Void;
         var symbol = tc.SymbolTable[funcCall.FunctionName.Name];
         SingleFuncSymbol? funcSymbol;
@@ -196,8 +203,18 @@ public class QuickCodeTypeChecker
         }
         else if (symbol is not SingleFuncSymbol func)
         {
-            tc.SymbolIsNotFunctionError(funcCall.FunctionName);
-            funcSymbol = null;
+            if (symbol is OverloadedFuncSymbol overloadedFunc)
+            {
+                funcSymbol = overloadedFunc.Get((from v in funcCall.Arguments select v.Type).ToImmutableArray());
+                if (funcSymbol is null)
+                {
+                    tc.NoProperOverloadedError(funcCall.FunctionName);
+                }
+            } else
+            {
+                tc.SymbolIsNotFunctionError(funcCall.FunctionName);
+                funcSymbol = null;
+            }
         }
         else
         {
@@ -206,6 +223,7 @@ public class QuickCodeTypeChecker
         int i = 0;
         if (funcSymbol is not null)
         {
+            funcCall.ResolvedOverload = funcSymbol;
             if (funcCall.Arguments.Count != funcSymbol.Parameters.Length)
             {
                 tc.TypeCheckError(funcCall,
@@ -215,7 +233,6 @@ public class QuickCodeTypeChecker
             for (; i < funcCall.Arguments.Count && i < funcSymbol.Parameters.Length; i++)
             {
                 var arg = funcCall.Arguments[i];
-                TypeCheck(arg, tc);
                 tc.AssertTypeAssignableTo(arg, funcSymbol.Parameters[i].Type, arg.Type);
             }
         }
@@ -509,7 +526,7 @@ public class QuickCodeTypeChecker
     TypeSymbol TypeCheckLUB(ListAST<ExpressionAST> expressions, TypeCheckState tc)
     {
         if (expressions.Count is 0) return TypeSymbol.Any;
-        
+
         TypeCheck(expressions[0], tc);
         TypeSymbol type = expressions[0].Type;
         for (int i = 1; i < expressions.Count; i++)
@@ -560,9 +577,9 @@ public class QuickCodeTypeChecker
         if (funcSymbol.ReturnType != TypeSymbol.Void && !tcChild.HasReturned.Value)
             tc.TypeCheckError(func.Name, "The function does not return on every path");
     }
-    
-    
-    
+
+
+
 }
 record class TypeCheckState(
     SymbolTable SymbolTable,

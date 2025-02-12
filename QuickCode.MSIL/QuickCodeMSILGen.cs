@@ -247,7 +247,7 @@ public class QuickCodeMSILGen
     }
     void CodeGen(FuncCallAST funcCall, CodeGenUtils u)
     {
-        var funcSymbol = (SingleFuncSymbol)u.Symbols[funcCall.FunctionName.Name]!;
+        var funcSymbol = funcCall.ResolvedOverload!;//(SingleFuncSymbol)u.Symbols[funcCall.FunctionName.Name]!;
         // generate all arguments
         foreach (var arg in funcCall.Arguments)
             CodeGen(arg, u);
