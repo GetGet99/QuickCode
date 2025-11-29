@@ -14,12 +14,12 @@ public interface INamespaceSymbol
     /// <exception cref="ArgumentNullException"/>
     /// <exception cref="ArgumentException"/>
     [DisallowNull]
-    Symbol? this[ReadOnlySpan<char> name] { get; set; }
+    ISymbol? this[ReadOnlySpan<char> name] { get; set; }
     /// <summary>
     /// Finds if the symbol exists.
     /// </summary>
     /// <param name="name">The name of the declared level.</param>
     /// <returns>If the symbol exists, returns the symbol. Otherwise, returns null</returns>
     bool Exists(ReadOnlySpan<char> name);
-    NamespaceSymbol? TryGetOrCreateNamespace(ReadOnlySpan<char> name);
+    INamespaceSymbol? TryGetOrCreateNamespace(ReadOnlySpan<char> name);
 }

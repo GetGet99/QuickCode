@@ -1,8 +1,8 @@
-﻿using QuickCode.Symbols;
+﻿using QuickCode.Symbols.SymbolTables;
 
 namespace QuickCode.AST.TopLevels;
 
 public record class TopLevelQuickCodeProgramAST(ListAST<ITopLevelDeclarable> TopLevelProgramComponentASTs) : QuickCodeAST
 {
-    public SymbolTable Symbols { get; internal set; } = null!;
+    public IScopeSymbolTable Symbols { get; internal set; } = null!;
 }

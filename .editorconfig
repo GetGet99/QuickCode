@@ -1,0 +1,6 @@
+﻿[*.cs]
+
+dotnet_diagnostic.GPI001.severity = suggestion
+dotnet_diagnostic.GPI002.severity = suggestion
+dotnet_diagnostic.GPI003.severity = suggestion
+dotnet_diagnostic.GPI004.severity = suggestion

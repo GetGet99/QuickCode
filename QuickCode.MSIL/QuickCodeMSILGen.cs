@@ -7,6 +7,11 @@ using System.Diagnostics.CodeAnalysis;
 using QuickCode.AST;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using QuickCode.Symbols.Compiler;
+using QuickCode.Symbols.Operators;
+using QuickCode.Symbols.Compiler.Implementation;
+using QuickCode.Symbols.Functions;
+using QuickCode.Symbols.Factories;
 namespace QuickCode.MSIL;
 
 public class QuickCodeMSILGen
@@ -16,7 +21,7 @@ public class QuickCodeMSILGen
     /// This method has undefined behavior if it takes in invalid program.
     /// </summary>
     /// <returns>The main method</returns>
-    public MethodDefinition CodeGen(TopLevelQuickCodeProgramAST program, ModuleDefinition module)
+    public MethodDefinition CodeGen(ITypeFactory typeFactory, TopLevelQuickCodeProgramAST program, ModuleDefinition module)
     {
         //var prog = module.DefineType(
         //    "<compilergenerated>.Program"
@@ -52,6 +57,7 @@ public class QuickCodeMSILGen
             ExitLabels: [], // function can't be labeled yet
             Symbols: program.Symbols,
             ContainingClass: mainProgramClass,
+            TypeFactory: typeFactory,
             CurrentScopeNamespace: "compilergenerated_Main"
         );
         GenerateFieldForCurrentLevel(u);
@@ -65,7 +71,7 @@ public class QuickCodeMSILGen
     }
     void GenerateFieldForCurrentLevel(CodeGenUtils u)
     {
-        foreach (var (name, sym) in u.Symbols.CurrentLevelSymbolKeys())
+        foreach (var (name, sym) in u.Symbols.Variables.CurrentLevel)
         {
             if (sym is LocalVarSymbol local && local.HasChildFunctionAccess)
             {
@@ -161,6 +167,9 @@ public class QuickCodeMSILGen
             case FuncCallAST funcCall:
                 CodeGen(funcCall, u);
                 break;
+            case MethodCallAST methodCall:
+                CodeGen(methodCall, u);
+                break;
             default:
                 NotImplemented(expression);
                 break;
@@ -168,51 +177,40 @@ public class QuickCodeMSILGen
     }
     void CodeGen(UnaryAST unaryAST, CodeGenUtils u)
     {
-        // assuming all integer operations for now
         CodeGen(unaryAST.Expression, u);
-        if (unaryAST.Expression.Type.Children[unaryAST.Operator] is not SingleFuncSymbol funcSymbol)
-        {
-            NotImplemented(unaryAST);
-            return;
-        }
-        if (funcSymbol is NativeFuncSymbol nativeFunc)
-        {
-            nativeFunc.CodeGen(null!, u);
-        }
-        else
-        {
-            NotImplemented(unaryAST);
-            return;
-        }
+        CodeGenCall(unaryAST.ResolvedOverload, u);
     }
     void CodeGen(UnaryWriteAST unaryWriteAST, CodeGenUtils u)
     {
-        // assuming all integer operations for now
         CodeGen(unaryWriteAST.Target, u);
         switch (unaryWriteAST.Operator)
         {
             case UnaryWriteOperators.DecrementBefore:
-                u.IL.Emit(OpCodes.Ldc_I4, 1);
-                u.IL.Emit(OpCodes.Sub);
+                CodeGenCall(unaryWriteAST.ResolvedOverload, u);
+                //u.IL.Emit(OpCodes.Ldc_I4, 1);
+                //u.IL.Emit(OpCodes.Sub);
                 u.IL.Emit(OpCodes.Dup);
                 Store(unaryWriteAST.Target, u);
                 break;
             case UnaryWriteOperators.IncrementBefore:
-                u.IL.Emit(OpCodes.Ldc_I4, 1);
-                u.IL.Emit(OpCodes.Add);
+                CodeGenCall(unaryWriteAST.ResolvedOverload, u);
+                //u.IL.Emit(OpCodes.Ldc_I4, 1);
+                //u.IL.Emit(OpCodes.Add);
                 u.IL.Emit(OpCodes.Dup);
                 Store(unaryWriteAST.Target, u);
                 break;
             case UnaryWriteOperators.DecrementAfter:
                 u.IL.Emit(OpCodes.Dup);
-                u.IL.Emit(OpCodes.Ldc_I4, 1);
-                u.IL.Emit(OpCodes.Sub);
+                CodeGenCall(unaryWriteAST.ResolvedOverload, u);
+                //u.IL.Emit(OpCodes.Ldc_I4, 1);
+                //u.IL.Emit(OpCodes.Sub);
                 Store(unaryWriteAST.Target, u);
                 break;
             case UnaryWriteOperators.IncrementAfter:
                 u.IL.Emit(OpCodes.Dup);
-                u.IL.Emit(OpCodes.Ldc_I4, 1);
-                u.IL.Emit(OpCodes.Add);
+                CodeGenCall(unaryWriteAST.ResolvedOverload, u);
+                //u.IL.Emit(OpCodes.Ldc_I4, 1);
+                //u.IL.Emit(OpCodes.Add);
                 Store(unaryWriteAST.Target, u);
                 break;
             default:
@@ -222,22 +220,9 @@ public class QuickCodeMSILGen
     }
     void CodeGen(BinaryAST binaryAST, CodeGenUtils u)
     {
-        // assuming all integer operations for now
         CodeGen(binaryAST.Left, u);
         CodeGen(binaryAST.Right, u);
-        if (binaryAST.Left.Type.Children[binaryAST.Operator] is not SingleFuncSymbol funcSymbol)
-        {
-            NotImplemented(binaryAST);
-            return;
-        }
-        if (funcSymbol is NativeFuncSymbol nativeFunc)
-        {
-            nativeFunc.CodeGen(null!, u);
-        } else
-        {
-            NotImplemented(binaryAST);
-            return;
-        }
+        CodeGenCall(binaryAST.ResolvedOverload, u);
     }
     void CodeGen(AssignAST assign, CodeGenUtils u)
     {
@@ -251,24 +236,21 @@ public class QuickCodeMSILGen
         // generate all arguments
         foreach (var arg in funcCall.Arguments)
             CodeGen(arg, u);
-        if (funcSymbol is NativeFuncSymbol native)
-        {
-            native.CodeGen(funcCall, u);
-        }
-        else if (funcSymbol is UserFuncSymbol userFunc)
-        {
-            u.IL.Emit(OpCodes.Call, u.Functions[userFunc]);
-        }
-        if (funcSymbol.ReturnType == TypeSymbol.Void)
-        {
-            // loads in the null as a replacement of the return value
-            // if return type is void
-            u.IL.Emit(OpCodes.Ldnull);
-        }
+        CodeGenCall(funcSymbol, u);
+    }
+    void CodeGen(MethodCallAST methodCall, CodeGenUtils u)
+    {
+        if (!methodCall.IsStaticCall)
+            CodeGen(methodCall.FunctionName.Expression, u);
+        var funcSymbol = methodCall.ResolvedOverload!;
+        // generate all arguments
+        foreach (var arg in methodCall.Arguments)
+            CodeGen(arg, u);
+        CodeGenCall(funcSymbol, u);
     }
     void CodeGen(LocalVarDeclStatementAST decl, CodeGenUtils u)
     {
-        var varSymbol = u.Symbols[decl.Name.Name];
+        var varSymbol = u.Symbols.Variables[decl.Name.Name];
         if (varSymbol is LocalVarSymbol local && !local.HasChildFunctionAccess)
             // declare local if it is not spilled
             u.Locals[decl.Name.Name] = u.IL.DeclareLocal(u.GetTypeRef(decl.Name.Type));
@@ -279,7 +261,7 @@ public class QuickCodeMSILGen
         => Load(id, u);
     void Load(IdentifierAST id, CodeGenUtils u)
     {
-        var varSymbol = u.Symbols[id.Name];
+        var varSymbol = u.Symbols.Variables[id.Name];
         if (varSymbol is ParameterVarSymbol param)
         {
             if (param.HasChildFunctionAccess)
@@ -296,7 +278,7 @@ public class QuickCodeMSILGen
     }
     void Store(IdentifierAST id, CodeGenUtils u)
     {
-        var varSymbol = u.Symbols[id.Name];
+        var varSymbol = u.Symbols.Variables[id.Name];
         if (varSymbol is ParameterVarSymbol param)
         {
             if (param.HasChildFunctionAccess)
@@ -400,6 +382,7 @@ public class QuickCodeMSILGen
         }
         var gotoLoopEnterLabel = u.IL.DefineLabel();
         var u2 = CreateLocalScope(forEachStmt.Block, u);
+        var int32 = u.GetTypeRef(u.TypeFactory.Int32);
         VariableDefinition userIterVar;
         if (forEachStmt.UseOutterTarget)
         {
@@ -407,18 +390,19 @@ public class QuickCodeMSILGen
         }
         else
         {
-            userIterVar = u2.Locals[forEachStmt.Target.Name] = u2.IL.DeclareLocal(u.GetTypeRef(TypeSymbol.Int32));
+            userIterVar = u2.Locals[forEachStmt.Target.Name] = u2.IL.DeclareLocal(int32);
         }
-        var i = u.IL.DeclareLocal(u.GetTypeRef(TypeSymbol.Int32));
-        var startVar = u.IL.DeclareLocal(u.GetTypeRef(TypeSymbol.Int32));
-        var endVar = u.IL.DeclareLocal(u.GetTypeRef(TypeSymbol.Int32));
+        var i = u.IL.DeclareLocal(int32);
+        var startVar = u.IL.DeclareLocal(int32);
+        var endVar = u.IL.DeclareLocal(int32);
         var innerLoopLabel = u.IL.DefineLabel();
         var loopExitLabel = u.IL.DefineLabel();
         var continueLabel = u.IL.DefineLabel();
 
         u.IL.MarkLabel(gotoLoopEnterLabel);
 
-        u2 = u2 with {
+        u2 = u2 with
+        {
             BreakLabel = loopExitLabel,
             ExitLabel = loopExitLabel,
             ContinueLabel = continueLabel,
@@ -467,9 +451,6 @@ public class QuickCodeMSILGen
         u.IL.Emit(OpCodes.Ldc_I4, 1);
         u.IL.Emit(OpCodes.Add);
         u.IL.Emit(OpCodes.Stloc, i);
-        // also bring changes to the user iter var
-        u.IL.Emit(OpCodes.Ldloc, i);
-        u.IL.Emit(OpCodes.Stloc, userIterVar);
 
         // go back to beginning
         u.IL.Emit(OpCodes.Br, innerLoopLabel);
@@ -518,7 +499,8 @@ public class QuickCodeMSILGen
         {
             CodeGen(condExpr, u);
             u.IL.Emit(OpCodes.Brtrue, label);
-        } else
+        }
+        else
         {
             u.IL.Emit(OpCodes.Br, label);
         }
@@ -542,7 +524,7 @@ public class QuickCodeMSILGen
     }
     void CodeGen(FunctionAST funcAST, CodeGenUtils u)
     {
-        var funcSymbol = (UserFuncSymbol)u.Symbols[funcAST.Name.Name]!;
+        QuickCodeFuncSymbol funcSymbol = funcAST.FuncSymbol;
         var method = new MethodDefinition(
             funcAST.Name.Name,
             MethodAttributes.Private | MethodAttributes.Static,
@@ -553,7 +535,7 @@ public class QuickCodeMSILGen
             method.Parameters.Add(new ParameterDefinition(ts.Name, ParameterAttributes.None, u.GetTypeRef(ts.Type)));
         u.Functions[funcSymbol] = method;
         var childIlGen = method.Body.GetILProcessor();
-        var ExitLabel = funcSymbol.ReturnType == TypeSymbol.Void ? childIlGen.DefineLabel() : null;
+        var ExitLabel = funcSymbol.ReturnType == u.TypeFactory.Void ? childIlGen.DefineLabel() : null;
         CodeGenUtils uChild = new(
             Module: u.Module,
             IL: method.Body.GetILProcessor(),
@@ -569,18 +551,19 @@ public class QuickCodeMSILGen
             ExitLabels: [], // function can't be labeled yet
             Symbols: funcAST.SymbolTable,
             ContainingClass: u.ContainingClass,
-            CurrentScopeNamespace: $"{u.CurrentScopeNamespace}.{funcAST.Name}"
+            CurrentScopeNamespace: $"{u.CurrentScopeNamespace}.{funcAST.Name}",
+            TypeFactory: u.TypeFactory
         );
         for (int i = 0; i < funcSymbol.Parameters.Length; i++)
         {
-            var paramSym = (ParameterVarSymbol)uChild.Symbols[funcSymbol.Parameters[i].Name]!;
+            var paramSym = (ParameterVarSymbol)uChild.Symbols.Variables[funcSymbol.Parameters[i].Name]!;
             if (paramSym.HasChildFunctionAccess)
             {
                 NotImplemented(funcAST);
             }
         }
         CodeGen(funcAST.Statements, uChild);
-        if (funcSymbol.ReturnType == TypeSymbol.Void)
+        if (funcSymbol.ReturnType == u.TypeFactory.Void)
         {
             uChild.IL.Append(ExitLabel);
             uChild.IL.Emit(OpCodes.Ret);
@@ -630,6 +613,23 @@ public class QuickCodeMSILGen
                 break;
         }
     }
+    static void CodeGenCall(IFuncBaseSymbol funcSymbol, CodeGenUtils u)
+    {
+        if (funcSymbol is INativeMSILImpl impl)
+        {
+            impl.CodeGen(u);
+        }
+        if (funcSymbol is QuickCodeFuncSymbol userFunc)
+        {
+            u.IL.Emit(OpCodes.Call, u.Functions[userFunc]);
+        }
+        if (funcSymbol.ReturnType == u.TypeFactory.Void)
+        {
+            // loads in the null as a replacement of the return value
+            // if return type is void
+            u.IL.Emit(OpCodes.Ldnull);
+        }
+    }
     Dictionary<K, V> CloneDict<K, V>(Dictionary<K, V> dict)
         where K : notnull
     {
@@ -668,13 +668,13 @@ public static class Extension
         il.Body.Variables.Add(local);
         return local;
     }
-    public static TypeReference GetTypeRef(this CodeGenUtils u, TypeSymbol type)
+    public static TypeReference GetTypeRef(this CodeGenUtils u, ITypeSymbol type)
     {
-        if (type == TypeSymbol.Int32)
+        if (type == u.TypeFactory.Int32)
         {
             return u.Module.TypeSystem.Int32;
         }
-        else if (type == TypeSymbol.Void)
+        else if (type == u.TypeFactory.Void)
         {
             return u.Module.TypeSystem.Void;
         }

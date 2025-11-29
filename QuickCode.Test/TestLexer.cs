@@ -1,6 +1,7 @@
 ﻿using Get.Lexer;
 using Get.PLShared;
 using Get.RegexMachine;
+using QuickCode.AST.Expressions;
 using System.Diagnostics;
 using System.Text;
 using static QuickCode.QuickCodeLexer;
@@ -45,14 +46,14 @@ static class TestLexer
         var tokens = Lexer.GetTokens().GetEnumerator();
         static void PrintCheck<T>(IEnumerator<IToken<Tokens>> tokens, Tokens paramToken, T value) where T : notnull
         {
-            AssertNextTokenIs(tokens, Identifier, "print");
+            AssertNextTokenIs(tokens, Identifier, new IdentifierAST("print"));
             AssertNextTokenIs(tokens, OpenBracket);
             AssertNextTokenIs(tokens, paramToken, value);
             AssertNextTokenIs(tokens, CloseBracket);
             AssertNextTokenIs(tokens, Newline);
         }
         AssertNextTokenIs(tokens, Func);
-        AssertNextTokenIs(tokens, Identifier, "fname");
+        AssertNextTokenIs(tokens, Identifier, new IdentifierAST("fname"));
         AssertNextTokenIs(tokens, Colon);
         AssertNextTokenIs(tokens, Newline);
         AssertNextTokenIs(tokens, Indent);

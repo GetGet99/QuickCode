@@ -1,8 +1,9 @@
 ﻿using QuickCode.AST.Expressions;
 using QuickCode.AST.FileProgram;
 using QuickCode.AST.Statements;
-using QuickCode.Symbols;
 using QuickCode.AST.TopLevels;
+using QuickCode.Symbols.Compiler.Implementation;
+using QuickCode.Symbols.SymbolTables;
 
 namespace QuickCode.AST;
 
@@ -14,5 +15,15 @@ public record class FunctionAST(IdentifierAST Name, ListAST<ParameterAST> Parame
     /// Gets the symbol table for the function.
     /// The symbol table is only valid after type check
     /// </summary>
-    public SymbolTable SymbolTable { get; internal set; } = null!;
+    public IScopeSymbolTable SymbolTable { get; internal set; } = null!;
+    /// <summary>
+    /// Gets the function symbol
+    /// The function symbol is only valid after type check
+    /// </summary>
+    public QuickCodeFuncSymbol FuncSymbol { get; internal set; } = null!;
+    public override int GetHashCode()
+    {
+        // prevent hash code loop
+        return base.GetHashCode();
+    }
 }

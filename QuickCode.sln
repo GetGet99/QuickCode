@@ -54,7 +54,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Get.Lexer.SourceGenerator",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Get.Lexer.Test", "Parser\Get.Lexer.Test\Get.Lexer.Test.csproj", "{14F70AE8-EDE9-4E67-8825-52B380B23598}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3. Tests", "3. Tests", "{16CE6FCF-F43D-4A5A-AB65-E52C44E77352}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4. Tests", "4. Tests", "{16CE6FCF-F43D-4A5A-AB65-E52C44E77352}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Get.RegexMachine.Test", "Parser\Get.RegexMachine.Test\Get.RegexMachine.Test.csproj", "{19184E41-4B3A-4ED7-B5BA-6CCE2BD3CC2B}"
 EndProject
@@ -63,6 +63,21 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Get.EasyCSharp.GeneratorTools", "Parser\Get.EasyCSharp.GeneratorTools\Get.EasyCSharp.GeneratorTools.csproj", "{36617794-6313-4C81-8C27-0C10DA21155A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickCode.Symbols", "QuickCode.Symbols\QuickCode.Symbols.csproj", "{ACA3C235-B07A-4F0D-94C6-7E9026AD308A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "3. Language Support", "3. Language Support", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Get.LangSupport", "Parser\Get.LangSupport\Get.LangSupport.csproj", "{F0D25D91-3BC0-B0A7-756E-FF69A28BA30C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "6. Language Support", "6. Language Support", "{70B6DCDC-7E58-4857-BD65-CC5063797AEB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickCode.LangSupport", "QuickCode.LangSupport\QuickCode.LangSupport.csproj", "{908C995D-889A-40DD-83AB-6496C5C39C79}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Get.LangSupport.Test", "Parser\Get.LangSupport.Test\Get.LangSupport.Test.csproj", "{855E3279-4BFD-EC32-991A-7F0DFBBAADD2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B4F9E4D0-5E80-44CA-980F-9FC63359E097}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -146,6 +161,18 @@ Global
 		{ACA3C235-B07A-4F0D-94C6-7E9026AD308A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ACA3C235-B07A-4F0D-94C6-7E9026AD308A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ACA3C235-B07A-4F0D-94C6-7E9026AD308A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F0D25D91-3BC0-B0A7-756E-FF69A28BA30C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F0D25D91-3BC0-B0A7-756E-FF69A28BA30C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F0D25D91-3BC0-B0A7-756E-FF69A28BA30C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F0D25D91-3BC0-B0A7-756E-FF69A28BA30C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{908C995D-889A-40DD-83AB-6496C5C39C79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{908C995D-889A-40DD-83AB-6496C5C39C79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{908C995D-889A-40DD-83AB-6496C5C39C79}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{908C995D-889A-40DD-83AB-6496C5C39C79}.Release|Any CPU.Build.0 = Release|Any CPU
+		{855E3279-4BFD-EC32-991A-7F0DFBBAADD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{855E3279-4BFD-EC32-991A-7F0DFBBAADD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{855E3279-4BFD-EC32-991A-7F0DFBBAADD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{855E3279-4BFD-EC32-991A-7F0DFBBAADD2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -176,9 +203,19 @@ Global
 		{F90A4B0D-7BB0-4CCD-B13E-5B3C59F410C8} = {CE418264-8599-4C42-B758-C8146DD8E232}
 		{36617794-6313-4C81-8C27-0C10DA21155A} = {F90A4B0D-7BB0-4CCD-B13E-5B3C59F410C8}
 		{ACA3C235-B07A-4F0D-94C6-7E9026AD308A} = {71E076A1-16B9-4868-84CE-B7558B91C225}
+		{02EA681E-C7D8-13C7-8484-4AC65E1B71E8} = {CE418264-8599-4C42-B758-C8146DD8E232}
+		{F0D25D91-3BC0-B0A7-756E-FF69A28BA30C} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{908C995D-889A-40DD-83AB-6496C5C39C79} = {70B6DCDC-7E58-4857-BD65-CC5063797AEB}
+		{855E3279-4BFD-EC32-991A-7F0DFBBAADD2} = {16CE6FCF-F43D-4A5A-AB65-E52C44E77352}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3DEF31E6-3B89-4A45-8756-0926CDB66FEB}
 	EndGlobalSection
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Parser\Get.Lexer.Shared\Get.Lexer.Shared.projitems*{1c40e2b3-f8f9-4ce2-bc29-4160f8ecfc56}*SharedItemsImports = 5
+		Parser\Get.Parser.Shared\Get.Parser.Shared.projitems*{1c40e2b3-f8f9-4ce2-bc29-4160f8ecfc56}*SharedItemsImports = 5
+		Parser\Get.RegexMachine.Shared\Get.RegexMachine.Shared.projitems*{1c40e2b3-f8f9-4ce2-bc29-4160f8ecfc56}*SharedItemsImports = 5
+		Parser\Get.RegexMachine.Shared\Get.RegexMachine.Shared.projitems*{4a4ab426-d9fe-4eac-b4d7-567ef4f43271}*SharedItemsImports = 5
 		Parser\Get.Parser.Shared\Get.Parser.Shared.projitems*{4b376943-1628-4fc8-ab3f-196517ff9da4}*SharedItemsImports = 5
 		Parser\Get.Lexer.Shared\Get.Lexer.Shared.projitems*{620ba97d-7c9a-47f0-ae9e-7271f76f1dad}*SharedItemsImports = 13
 		Parser\Get.Parser.Shared\Get.Parser.Shared.projitems*{9b50ae4d-44b5-4ff8-b2cd-6ab8e432d09d}*SharedItemsImports = 13

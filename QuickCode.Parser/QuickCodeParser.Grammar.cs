@@ -10,6 +10,7 @@ using QuickCode.AST.Expressions.Values;
 using Get.PLShared;
 using QuickCode.AST.FileProgram;
 using QuickCode.AST.Classes;
+using QuickCode.Symbols.Operators;
 namespace QuickCode;
 [Parser(Program, UseGetLexerTypeInformation = true)]
 [Precedence(
@@ -49,6 +50,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Type<ITopLevelDeclarable>]
         [Rule(Statement, AS, VALUE, IDENTITY)]
         [Rule(FunctionDefinition, AS, VALUE, IDENTITY)]
+        [Rule(ClassDefinition, AS, VALUE, IDENTITY)]
         TopLevelProgramComponent,
 
 
@@ -79,7 +81,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(NamespaceDeclarableList, AS, LIST, NamespaceDeclarable, AS, VALUE, APPENDLIST)]
         NamespaceDeclarableList,
         [Type<QuickCodeClassAST>]
-        [Rule(Class, AS, VALUE, IDENTITY)]
+        [Rule(ClassDefinition, AS, VALUE, IDENTITY)]
         NamespaceDeclarable,
         [Type<QuickCodeClassAST>]
         [Rule(
@@ -91,7 +93,7 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             Terminal.Dedent,
             typeof(QuickCodeClassAST)
         )]
-        Class,
+        ClassDefinition,
         [Type<ListAST<IClassDeclarable>>]
         [Rule(Terminal.Nop, Terminal.Newline, EMPTYLIST)]
         [Rule(ClassDeclarable, AS, VALUE, SINGLELIST)]
@@ -110,8 +112,6 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
             Terminal.Newline,
             typeof(FieldDeclStatementAST))]
         FieldDeclaration,
-
-
         /// <summary>
         /// Represents list of 1+ statements. This list can empty if nop is used. Otherwise this list is not empty.
         /// </summary>
@@ -386,6 +386,12 @@ public partial class QuickCodeParser : ParserBase<Terminal, NonTerminal, QuickCo
         [Rule(Terminal.Boolean, AS, nameof(BooleanValueAST.Value), typeof(BooleanValueAST))]
         [Rule(Terminal.Identifier, AS, VALUE, IDENTITY)]
 
+        // New
+        [Rule(Terminal.New, Type, AS, nameof(NewObjectAST.TypeName),
+            Terminal.OpenBracket,
+            CommaSeparatedExpression, AS, nameof(NewObjectAST.Arguments),
+            Terminal.CloseBracket,
+            typeof(NewObjectAST))]
         // Function Call
         [Rule(Terminal.Identifier, AS, nameof(FuncCallAST.FunctionName),
             Terminal.OpenBracket,

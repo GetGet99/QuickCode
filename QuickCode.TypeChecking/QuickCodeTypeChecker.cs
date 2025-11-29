@@ -2,21 +2,23 @@
 using QuickCode.AST.Expressions;
 using QuickCode.AST.Expressions.Values;
 using QuickCode.AST.Statements;
-using QuickCode.Symbols;
 using QuickCode.AST.TopLevels;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Reflection.Emit;
-using System.Collections.Immutable;
+using QuickCode.Symbols.Compiler;
+using QuickCode.Symbols.Operators;
+using QuickCode.Symbols.Functions;
+using QuickCode.Symbols;
+using QuickCode.Symbols.Factories;
+using QuickCode.Symbols.SymbolTables;
+using QuickCode.Symbols.Compiler.Implementation;
 
 namespace QuickCode.TypeChecking;
+
 using static TypeCheckHelper;
 public class QuickCodeTypeChecker
 {
-    public void TypeCheck(TopLevelQuickCodeProgramAST program, SymbolTable defaultSymbolTable)
+    public void TypeCheck(TopLevelQuickCodeProgramAST program, ITypeFactory typeFactory, INamespaceSymbol globalSymbols, IScopeSymbolTable globalConstantSymbolTables)
     {
-        var SymbolTable = defaultSymbolTable.Clone();
+        var SymbolTable = globalConstantSymbolTables.Clone();
         var tc = new TypeCheckState(
             SymbolTable,
             DefinedGotoLabels: [],
@@ -26,7 +28,13 @@ public class QuickCodeTypeChecker
             CanContinue: false,
             ExitableLabels: [],
             BreakableLabels: [],
-            ContinuableLabels: []);
+            // top level statements do not have a current type
+            CurrentType: null,
+            ContinuableLabels: [],
+            TypeFactory: typeFactory,
+            GlobalSymbols: globalSymbols,
+            NativeSymbolsMapping: []
+        );
         ArgumentNullException.ThrowIfNull(program);
         foreach (var comp in program.TopLevelProgramComponentASTs)
             TypeCheck(comp, tc);
@@ -110,6 +118,9 @@ public class QuickCodeTypeChecker
             case FuncCallAST funcCall:
                 TypeCheck(funcCall, tc);
                 break;
+            case MethodCallAST methodCall:
+                TypeCheck(methodCall, tc);
+                break;
             default:
                 tc.NotImplemented(expression);
                 break;
@@ -118,65 +129,39 @@ public class QuickCodeTypeChecker
     void TypeCheck(UnaryAST unaryAST, TypeCheckState tc)
     {
         TypeCheck(unaryAST.Expression, tc);
-        if (unaryAST.Expression.Type.Children[unaryAST.Operator] is not SingleFuncSymbol handler)
+        if (unaryAST.Expression.Type.Functions[unaryAST.Operator, unaryAST.Expression.Type] is not { } handler)
         {
-            tc.NotImplemented(unaryAST);
+            tc.NoProperOverloadedError(unaryAST);
+            unaryAST.Type = tc.TypeFactory.Object;
             return;
         }
-        if (tc.AssertTypeAssignableTo(unaryAST, handler.Parameters[0].Type, unaryAST.Expression.Type))
-        {
-            unaryAST.Type = handler.ReturnType;
-        }
-        else
-        {
-            unaryAST.Type = TypeSymbol.Object;
-        }
+        unaryAST.ResolvedOverload = handler;
+        unaryAST.Type = handler.ReturnType;
     }
     void TypeCheck(UnaryWriteAST unaryWriteAST, TypeCheckState tc)
     {
-        // manual mode for now, operator overloading still not implemented
-        // let's assume only integer for now
         TypeCheck(unaryWriteAST.Target, tc);
-        if (tc.AssertTypeAssignableTo(unaryWriteAST.Target, TypeSymbol.Int32, unaryWriteAST.Target.Type))
+        if (unaryWriteAST.Target.Type.Functions[unaryWriteAST.Operator, unaryWriteAST.Target.Type] is not { } handler)
         {
-            switch (unaryWriteAST.Operator)
-            {
-                case UnaryWriteOperators.IncrementBefore or
-                    UnaryWriteOperators.IncrementAfter or
-                    UnaryWriteOperators.DecrementBefore or
-                    UnaryWriteOperators.DecrementAfter:
-                    unaryWriteAST.Type = TypeSymbol.Int32;
-                    break;
-                default:
-                    tc.NotImplemented(unaryWriteAST);
-                    break;
-            }
+            tc.NoProperOverloadedError(unaryWriteAST);
+            unaryWriteAST.Type = tc.TypeFactory.Object;
+            return;
         }
-        else
-        {
-            unaryWriteAST.Type = TypeSymbol.Object;
-        }
+        unaryWriteAST.ResolvedOverload = handler;
+        unaryWriteAST.Type = handler.ReturnType;
     }
     void TypeCheck(BinaryAST binaryAST, TypeCheckState tc)
     {
         TypeCheck(binaryAST.Left, tc);
         TypeCheck(binaryAST.Right, tc);
-        if (binaryAST.Left.Type.Children[binaryAST.Operator] is not SingleFuncSymbol handler)
+        if (binaryAST.Left.Type.Functions[binaryAST.Operator, binaryAST.Left.Type, binaryAST.Right.Type] is not { } handler)
         {
-            tc.NotImplemented(binaryAST);
+            tc.NoProperOverloadedError(binaryAST);
+            binaryAST.Type = tc.TypeFactory.Object;
             return;
         }
-        if (Combine(
-            tc.AssertTypeAssignableTo(binaryAST, handler.Parameters[0].Type, binaryAST.Left.Type),
-            tc.AssertTypeAssignableTo(binaryAST, handler.Parameters[1].Type, binaryAST.Right.Type)
-        ))
-        {
-            binaryAST.Type = handler.ReturnType;
-        }
-        else
-        {
-            binaryAST.Type = TypeSymbol.Object;
-        }
+        binaryAST.ResolvedOverload = handler;
+        binaryAST.Type = handler.ReturnType;
     }
     void TypeCheck(AssignAST assign, TypeCheckState tc, bool hasRightTypeChecked = false)
     {
@@ -193,65 +178,78 @@ public class QuickCodeTypeChecker
             TypeCheck(argument, tc);
         }
 
-        funcCall.Type = TypeSymbol.Void;
-        var symbol = tc.SymbolTable[funcCall.FunctionName.Name];
-        SingleFuncSymbol? funcSymbol;
-        if (symbol is null)
+        funcCall.Type = tc.TypeFactory.Void;
+        var funcSymbol = tc.SymbolTable.Functions.GetStatic(funcCall.FunctionName.Name, [.. from x in funcCall.Arguments select new ArgumentInfo(null, x.Type)]);
+        if (funcSymbol is null)
         {
-            tc.SymbolUndefinedError(funcCall.FunctionName);
+            tc.SymbolUndefinedFunctionError(funcCall.FunctionName);
             funcSymbol = null;
+            funcCall.Type = tc.TypeFactory.Object;
+            return;
         }
-        else if (symbol is not SingleFuncSymbol func)
+        funcCall.ResolvedOverload = funcSymbol;
+
+        //if (funcCall.Arguments.Count != funcSymbol.Parameters.Length)
+        //{
+        //    tc.TypeCheckError(funcCall,
+        //        $"The function does accepts {funcSymbol.Parameters.Length} parameters" +
+        //        $", but {funcCall.Arguments.Count} arguments were given");
+        //}
+        //for (int i = 0; i < funcCall.Arguments.Count && i < funcSymbol.Parameters.Length; i++)
+        //{
+        //    var arg = funcCall.Arguments[i];
+        //    tc.AssertTypeAssignableTo(arg, funcSymbol.Parameters[i].Type, arg.Type);
+        //}
+        funcCall.Type = funcSymbol.ReturnType;
+    }
+    void TypeCheck(MethodCallAST methodCall, TypeCheckState tc)
+    {
+        TypeCheck(methodCall.FunctionName.Expression, tc);
+        foreach (var argument in methodCall.Arguments)
         {
-            if (symbol is OverloadedFuncSymbol overloadedFunc)
-            {
-                funcSymbol = overloadedFunc.Get((from v in funcCall.Arguments select v.Type).ToImmutableArray());
-                if (funcSymbol is null)
-                {
-                    tc.NoProperOverloadedError(funcCall.FunctionName);
-                }
-            } else
-            {
-                tc.SymbolIsNotFunctionError(funcCall.FunctionName);
-                funcSymbol = null;
-            }
+            TypeCheck(argument, tc);
         }
-        else
+        
+        methodCall.Type = tc.TypeFactory.Void;
+        IFuncSymbol funcSymbol;
+        if (methodCall.FunctionName.Expression.Type is QuickCodeTypeRefSymbol typeRef)
         {
-            funcSymbol = func;
-        }
-        int i = 0;
-        if (funcSymbol is not null)
+            funcSymbol = typeRef.ReferencedType.Functions.GetStatic(methodCall.FunctionName.Member.Name, [.. methodCall.Arguments.Select(x => new ArgumentInfo(null, x.Type))]);
+            methodCall.IsStaticCall = true;
+        } else
         {
-            funcCall.ResolvedOverload = funcSymbol;
-            if (funcCall.Arguments.Count != funcSymbol.Parameters.Length)
-            {
-                tc.TypeCheckError(funcCall,
-                    $"The function does accepts {funcSymbol.Parameters.Length} parameters" +
-                    $", but {funcCall.Arguments.Count} arguments were given");
-            }
-            for (; i < funcCall.Arguments.Count && i < funcSymbol.Parameters.Length; i++)
-            {
-                var arg = funcCall.Arguments[i];
-                tc.AssertTypeAssignableTo(arg, funcSymbol.Parameters[i].Type, arg.Type);
-            }
+            funcSymbol = methodCall.FunctionName.Expression.Type.Functions.GetInstance(methodCall.FunctionName.Member.Name, [.. methodCall.Arguments.Select(x => new ArgumentInfo(null, x.Type))]);
         }
-        // continue for the rest
-        for (; i < funcCall.Arguments.Count; i++)
+        if (funcSymbol is null)
         {
-            var arg = funcCall.Arguments[i];
-            TypeCheck(arg, tc);
+            tc.SymbolUndefinedFunctionError(methodCall.FunctionName.Member);
+            funcSymbol = null;
+            methodCall.Type = tc.TypeFactory.Object;
+            return;
         }
-        funcCall.Type = funcSymbol?.ReturnType ?? TypeSymbol.Object;
+        methodCall.ResolvedOverload = funcSymbol;
+
+        //if (funcCall.Arguments.Count != funcSymbol.Parameters.Length)
+        //{
+        //    tc.TypeCheckError(funcCall,
+        //        $"The function does accepts {funcSymbol.Parameters.Length} parameters" +
+        //        $", but {funcCall.Arguments.Count} arguments were given");
+        //}
+        //for (int i = 0; i < funcCall.Arguments.Count && i < funcSymbol.Parameters.Length; i++)
+        //{
+        //    var arg = funcCall.Arguments[i];
+        //    tc.AssertTypeAssignableTo(arg, funcSymbol.Parameters[i].Type, arg.Type);
+        //}
+        methodCall.Type = funcSymbol.ReturnType;
     }
     void TypeCheck(LocalVarDeclStatementAST decl, TypeCheckState tc)
     {
         var name = decl.Name.Name;
         bool hasExprChecked = false;
-        TypeSymbol? declType;
+        ITypeSymbol? declType;
         if (decl.DeclType is { } rawDeclType)
         {
-            declType = tc.TypeFromTypeAST(rawDeclType, tc.SymbolTable);
+            declType = tc.TypeFromTypeAST(rawDeclType, tc.SymbolTable.Types);
         }
         else
         {
@@ -266,13 +264,13 @@ public class QuickCodeTypeChecker
             declType = decl.Expression.Type;
             hasExprChecked = true;
         }
-        if (tc.SymbolTable.ExistsAtCurrentLevel(name))
+        if (!tc.SymbolTable.CanDeclareVariable(name))
         {
             tc.SymbolAlreadyDefinedError(decl.Name);
         }
         else
         {
-            tc.SymbolTable[name] = new LocalVarSymbol(declType);
+            tc.SymbolTable.Variables[name] = new LocalVarSymbol(declType);
         }
         TypeCheck(decl.Name, tc);
         if (!hasExprChecked)
@@ -284,7 +282,7 @@ public class QuickCodeTypeChecker
         if (controlFlowStmt.Condition is { } condExpr)
         {
             TypeCheck(condExpr, tc);
-            tc.AssertTypeAssignableTo(condExpr, TypeSymbol.Boolean, condExpr.Type);
+            tc.AssertTypeAssignableTo(condExpr, tc.TypeFactory.Boolean, condExpr.Type);
         }
         switch (controlFlowStmt)
         {
@@ -353,7 +351,7 @@ public class QuickCodeTypeChecker
         // no matter if it is a do-while or while loop
         // the condition must be using variables in the outter scope.
         TypeCheck(ifStmt.Condition, tc);
-        tc.AssertTypeAssignableTo(ifStmt.Condition, TypeSymbol.Boolean, ifStmt.Condition.Type);
+        tc.AssertTypeAssignableTo(ifStmt.Condition, tc.TypeFactory.Boolean, ifStmt.Condition.Type);
 
         var childTc = tc with
         {
@@ -362,7 +360,7 @@ public class QuickCodeTypeChecker
             // we can't be sure that it will return
             // so we clone so child can't modify original value
             HasReturned = new(tc.HasReturned.Value),
-            DefinedGotoLabels = new(tc.DefinedGotoLabels)
+            DefinedGotoLabels = [.. tc.DefinedGotoLabels]
         };
         if (ifStmt.Label is { } lb)
         {
@@ -372,7 +370,7 @@ public class QuickCodeTypeChecker
                 tc.TypeCheckError(lb, $"Label {lb.Name} is already present in the current scope.");
             }
             childTc.DefinedGotoLabels.Add(lb.Name);
-            childTc = childTc with { ExitableLabels = CopyAndAdd(childTc.ExitableLabels, lb.Name) };
+            childTc = childTc with { ExitableLabels = [.. childTc.ExitableLabels, lb.Name] };
         }
         // make a clone of the current symbol table for the inner scope.
         TypeCheckBlock(tc.SymbolTable.Clone(), ifStmt.TrueBlock, childTc);
@@ -383,13 +381,13 @@ public class QuickCodeTypeChecker
         // no matter if it is a do-while or while loop
         // the condition must be using variables in the outter scope.
         TypeCheck(whileStmt.Condition, tc);
-        tc.AssertTypeAssignableTo(whileStmt.Condition, TypeSymbol.Boolean, whileStmt.Condition.Type);
+        tc.AssertTypeAssignableTo(whileStmt.Condition, tc.TypeFactory.Boolean, whileStmt.Condition.Type);
         var childTc = tc with
         {
             CanExit = true,
             CanBreak = true,
             CanContinue = true,
-            DefinedGotoLabels = new(tc.DefinedGotoLabels),
+            DefinedGotoLabels = [.. tc.DefinedGotoLabels],
             // if there's a return statement in while loop
             // we can't be sure that it will return
             // so we clone so child can't modify original value
@@ -424,14 +422,20 @@ public class QuickCodeTypeChecker
         var childScopeSymbols = tc.SymbolTable.Clone();
         // if it already exists, only allow if same type (check in TypeCheck below)
         // if not, declare a new one for the child
-        if (!tc.SymbolTable.ExistsAtCurrentLevel(foreachStmt.Target.Name))
+        if (tc.SymbolTable.CanDeclareVariable(foreachStmt.Target.Name))
         {
             foreachStmt.UseOutterTarget = false;
-            childScopeSymbols[foreachStmt.Target.Name] = new LocalVarSymbol(TypeSymbol.Int32);
+            childScopeSymbols.Variables[foreachStmt.Target.Name] = new LocalVarSymbol(tc.TypeFactory.Int32);
+        }
+        else if (tc.SymbolTable.Variables[foreachStmt.Target.Name]?.Type == tc.TypeFactory.Int32)
+        {
+            foreachStmt.UseOutterTarget = true;
         }
         else
         {
-            foreachStmt.UseOutterTarget = true;
+            // shallow it lol
+            foreachStmt.UseOutterTarget = false;
+            childScopeSymbols.Variables[foreachStmt.Target.Name] = new LocalVarSymbol(tc.TypeFactory.Int32);
         }
         var childTc = tc with
         {
@@ -439,7 +443,7 @@ public class QuickCodeTypeChecker
             CanExit = true,
             CanBreak = true,
             CanContinue = true,
-            DefinedGotoLabels = new(tc.DefinedGotoLabels),
+            DefinedGotoLabels = [.. tc.DefinedGotoLabels],
             // if there's a return statement in for loop
             // we can't be sure that it will return
             // so we clone so child can't modify original value
@@ -462,7 +466,7 @@ public class QuickCodeTypeChecker
         }
         // type check the target
         TypeCheck(foreachStmt.Target, childTc);
-        tc.AssertTypeAssignableTo(foreachStmt.Target, TypeSymbol.Int32, foreachStmt.Target.Type);
+        tc.AssertTypeAssignableTo(foreachStmt.Target, tc.TypeFactory.Int32, foreachStmt.Target.Type);
         // type check the statements
         TypeCheck(foreachStmt.Block.Statements, childTc);
         // set the symbol table for the block
@@ -484,16 +488,16 @@ public class QuickCodeTypeChecker
         if (gotoStmt.Condition is { } cond)
         {
             TypeCheck(cond, tc);
-            tc.AssertTypeAssignableTo(gotoStmt.Condition, TypeSymbol.Boolean, cond.Type);
+            tc.AssertTypeAssignableTo(gotoStmt.Condition, tc.TypeFactory.Boolean, cond.Type);
         }
     }
-    void TypeCheckBlock(SymbolTable innerSymbolTable, BlockControlAST block, TypeCheckState tc)
+    void TypeCheckBlock(IScopeSymbolTable innerSymbolTable, BlockControlAST block, TypeCheckState tc)
     {
         // cached the current symbols
         var outterScopeSymbol = tc.SymbolTable;
         var labels = tc.DefinedGotoLabels;
         // sets the symbols to be the inner scope
-        tc = tc with { SymbolTable = innerSymbolTable, DefinedGotoLabels = new HashSet<string>(labels) };
+        tc = tc with { SymbolTable = innerSymbolTable, DefinedGotoLabels = [.. labels] };
         // type checks
         TypeCheck(block.Statements, tc);
         // set the symbol table for the block
@@ -504,31 +508,31 @@ public class QuickCodeTypeChecker
         switch (value)
         {
             case Int32ValueAST intValue:
-                intValue.Type = TypeSymbol.Int32;
+                intValue.Type = tc.TypeFactory.Int32;
                 break;
             case BooleanValueAST boolValue:
-                boolValue.Type = TypeSymbol.Boolean;
+                boolValue.Type = tc.TypeFactory.Boolean;
                 break;
             case StringValueAST stringValue:
-                stringValue.Type = TypeSymbol.String;
+                stringValue.Type = tc.TypeFactory.String;
                 break;
             case ListDeclarationAST list:
-                list.Type = TypeSymbol.List(TypeCheckLUB(list.Elements, tc));
+                list.Type = tc.TypeFactory.List(tc.GetNative(TypeCheckLUB(list.Elements, tc)));
                 break;
             case ArrayDeclarationWithValuesAST arr:
-                arr.Type = TypeSymbol.Array(TypeCheckLUB(arr.Elements, tc));
+                arr.Type = tc.TypeFactory.Array(tc.GetNative(TypeCheckLUB(arr.Elements, tc)));
                 break;
             default:
                 tc.NotImplemented(value);
                 break;
         }
     }
-    TypeSymbol TypeCheckLUB(ListAST<ExpressionAST> expressions, TypeCheckState tc)
+    ITypeSymbol TypeCheckLUB(ListAST<ExpressionAST> expressions, TypeCheckState tc)
     {
-        if (expressions.Count is 0) return TypeSymbol.Any;
+        if (expressions.Count is 0) return AnyType.Instance;
 
         TypeCheck(expressions[0], tc);
-        TypeSymbol type = expressions[0].Type;
+        ITypeSymbol type = expressions[0].Type;
         for (int i = 1; i < expressions.Count; i++)
         {
             TypeCheck(expressions[i], tc);
@@ -538,10 +542,18 @@ public class QuickCodeTypeChecker
     }
     void TypeCheck(IdentifierAST id, TypeCheckState tc)
     {
-        var varSymbol = tc.VarFromVarId(id, tc.SymbolTable);
+        var varSymbol = tc.VarFromVarId(id, tc.SymbolTable.Variables, silentIfNotVariable: true);
         if (varSymbol is null)
         {
-            id.Type = TypeSymbol.Object;
+            var type = tc.SymbolTable.Types[id.Name, []];
+            if (type is null)
+            {
+                tc.SymbolUndefinedError(id);
+                id.Type = tc.TypeFactory.Object;
+            } else
+            {
+                id.Type = new QuickCodeTypeRefSymbol(type);
+            }
         }
         else
         {
@@ -550,39 +562,32 @@ public class QuickCodeTypeChecker
     }
     void TypeCheck(FunctionAST func, TypeCheckState tc)
     {
-        var funcSymbol = tc.BuildFuncSymbol(func, tc.SymbolTable);
+        var (funcSymbol, args) = tc.BuildFuncSymbol(func, tc.SymbolTable);
+        (tc.SymbolTable.Functions as IFuncSymbolTableWritable)!.AddStatic(func.Name.Name, funcSymbol);
 
-
-        if (tc.SymbolTable.ExistsAtCurrentLevel(func.Name.Name))
-        {
-            tc.SymbolAlreadyDefinedError(func.Name);
-        }
-        else
-        {
-            tc.SymbolTable[func.Name.Name] = funcSymbol;
-        }
         var tcChild = new TypeCheckState(
             SymbolTable: func.SymbolTable,
             DefinedGotoLabels: [],
-            CanExit: funcSymbol.ReturnType == TypeSymbol.Void, // only allow exit on void
+            HasReturned: new(false),
+            CanExit: funcSymbol.ReturnType == tc.TypeFactory.Void, // only allow exit on void
             CanBreak: false,
             CanContinue: false,
             ExitableLabels: [],
             BreakableLabels: [],
             ContinuableLabels: [],
-            HasReturned: new(false),
+            TypeFactory: tc.TypeFactory,
+            CurrentType: tc.CurrentType,
+            GlobalSymbols: tc.GlobalSymbols,
+            NativeSymbolsMapping: tc.NativeSymbolsMapping,
             ExpectedReturnType: funcSymbol.ReturnType
         );
         TypeCheck(func.Statements, tcChild);
-        if (funcSymbol.ReturnType != TypeSymbol.Void && !tcChild.HasReturned.Value)
+        if (funcSymbol.ReturnType != tc.TypeFactory.Void && !tcChild.HasReturned.Value)
             tc.TypeCheckError(func.Name, "The function does not return on every path");
     }
-
-
-
 }
 record class TypeCheckState(
-    SymbolTable SymbolTable,
+    IScopeSymbolTable SymbolTable,
     HashSet<string> DefinedGotoLabels,
     Ref<bool> HasReturned,
     bool CanExit,
@@ -591,11 +596,16 @@ record class TypeCheckState(
     HashSet<string> ExitableLabels,
     HashSet<string> BreakableLabels,
     HashSet<string> ContinuableLabels,
-    TypeSymbol? ExpectedReturnType = null
+    ITypeFactory TypeFactory,
+    INamespaceSymbol GlobalSymbols,
+    IUserTypeSymbol? CurrentType,
+    Dictionary<ITypeSymbol, INativeTypeSymbol> NativeSymbolsMapping,
+    ITypeSymbol? ExpectedReturnType = null
 ) : ITypeCheckErrorState;
 interface ITypeCheckErrorState
 {
-
+    IUserTypeSymbol? CurrentType { get; }
+    ITypeFactory TypeFactory { get; }
 }
 class Ref<T>(T defaultValue = default) where T : struct
 {

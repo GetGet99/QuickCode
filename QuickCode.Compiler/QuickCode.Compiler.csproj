@@ -1,16 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<LangVersion>14</LangVersion>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\QuickCode.AST\QuickCode.AST.csproj" />
-    <ProjectReference Include="..\QuickCode.MSIL\QuickCode.MSIL.csproj" />
-    <ProjectReference Include="..\QuickCode.TypeChecking\QuickCode.TypeChecking.csproj" />
-    <ProjectReference Include="..\QuickCode.Parser\QuickCode.Parser.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\QuickCode.AST\QuickCode.AST.csproj" />
+		<ProjectReference Include="..\QuickCode.MSIL\QuickCode.MSIL.csproj" />
+		<ProjectReference Include="..\QuickCode.TypeChecking\QuickCode.TypeChecking.csproj" />
+		<ProjectReference Include="..\QuickCode.Parser\QuickCode.Parser.csproj" />
+	</ItemGroup>
 
 </Project>

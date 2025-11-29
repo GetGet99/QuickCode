@@ -1,4 +1,5 @@
-﻿using Get.Lexer;
+﻿using Get.LangSupport;
+using Get.Lexer;
 using Get.RegexMachine;
 using QuickCode.AST.Expressions;
 
@@ -39,66 +40,99 @@ public partial class QuickCodeLexer(ITextSeekable text) : LexerBase<QuickCodeLex
         // reference: https://stackoverflow.com/questions/13014947/regex-to-match-a-c-style-multiline-comment
         [Regex(@"/\*[^\*]*\*+([^/\*][^\*]*\*+)*/", ShouldReturnToken = false, State = (int)LexerStates.Code, Order = (int)Order.Comment)]
         //[Regex(@"/\*[^\*]*\*+([^/\*][^\*]*\*+)*/", ShouldReturnToken = false, State = (int)LexerStates.NewLogicalLine, Order = (int)Order.Comment)]
+        [TextmateCommentScope(Regexes = [@"//[^\r\n]*"], Priority = (int)TextmateOrder.LineComment)]
+        [TextmateCommentScope(Begin = @"/\*", End = @"/\*", Priority = (int)TextmateOrder.BlockComment)]
         Comment,
 
 
         [Regex<IdentifierAST>(@"[a-zA-Z][a-zA-Z0-9]*", nameof(CreateIdentifier), State = (int)LexerStates.Code)]
+        [TextmateOtherVariableScope(VariableType.Other, Priority = (int)TextmateOrder.Identifier)]
         Identifier,
         [Regex<IdentifierAST>(@"list", nameof(CreateIdentifier2), State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.Keywords)]
         List,
         [Regex<IdentifierAST>(@"array", nameof(CreateIdentifier3), State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.Keywords)]
         Array,
 
         [Regex(@"deflb", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         DefLabel,
         [Regex(@"if", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         If,
         [Regex(@"else", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Else,
         [Regex(@"while", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         While,
         [Regex(@"do", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Do,
         [Regex(@"goto", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Goto,
         [Regex(@"func", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Declaration, Priority = (int)TextmateOrder.Keywords)]
         Func,
         [Regex(@"return", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Return,
         [Regex(@"nop", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Nop,
         [Regex(@"var", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Declaration, Priority = (int)TextmateOrder.Keywords)]
         Var,
         [Regex(@"not", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.Keywords)]
         Not,
         [Regex(@"for", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         For,
+        [Regex(@"new", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.Keywords)]
+        New,
         [Regex(@"in", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.Keywords)]
         In,
         [Regex(@"namespace", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Declaration, Priority = (int)TextmateOrder.Keywords)]
         Namespace,
         [Regex(@"break", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Break,
         [Regex(@"continue", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Continue,
         [Regex(@"exit", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Control, Priority = (int)TextmateOrder.Keywords)]
         Exit,
         [Regex(@"and", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.Keywords)]
         And,
         [Regex(@"or", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.Keywords)]
         Or,
         [Regex(@"class", State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateKeywordScope(KeywordType.Declaration, Priority = (int)TextmateOrder.Keywords)]
         Class,
 
         [Regex(@"\$", State = (int)LexerStates.Code)]
+        [TextmateConstantScope(ConstantType.Other, Regexes = [@"\$[a-zA-Z][a-zA-Z0-9]*"], Priority = (int)TextmateOrder.SpecialIdentifier)]
         DollarSign,
         [Regex(@":", State = (int)LexerStates.Code)]
+        [TextmatePunctuationSeparatorScope(PunctuationSeparatorType.Colon, Priority = (int)TextmateOrder.OperatorsAndPunctuations)]
         Colon,
         [Regex(@"\.", State = (int)LexerStates.Code)]
+        [TextmatePunctuationSeparatorScope(PunctuationSeparatorType.Dot, Priority = (int)TextmateOrder.OperatorsAndPunctuations)]
         Dot,
         [Regex(@",", State = (int)LexerStates.Code)]
+        [TextmatePunctuationSeparatorScope(PunctuationSeparatorType.Comma, Priority = (int)TextmateOrder.OperatorsAndPunctuations)]
         Comma,
         [Regex(@"->", State = (int)LexerStates.Code)]
+        [TextmateKeywordScope(KeywordType.Other, Priority = (int)TextmateOrder.OperatorsAndPunctuations)]
         Arrow,
         [Regex(@"\(", State = (int)LexerStates.Code)]
         OpenBracket,
@@ -112,51 +146,73 @@ public partial class QuickCodeLexer(ITextSeekable text) : LexerBase<QuickCodeLex
 
         [Regex<bool>(@"true", nameof(TrueValue), State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
         [Regex<bool>(@"false", nameof(FalseValue), State = (int)LexerStates.Code, Order = (int)Order.KeywordAndSpecialSyntax)]
+        [TextmateConstantLanguageScope(ConstantLanguageType.Boolean, Priority = (int)TextmateOrder.Keywords)]
         Boolean,
         [Regex<int>(@"(-|)[0-9][0-9_]*", nameof(ParseInt), State = (int)LexerStates.Code)]
+        [TextmateConstantNumericScope(NumericType.Decimal, Priority = (int)TextmateOrder.Number, Regexes = [@"(-|)[0-9][0-9_]*"])]
         [Regex<int>(@"0x[0-9a-fA-F]+", nameof(ParseHex), State = (int)LexerStates.Code)]
+        [TextmateConstantNumericScope(NumericType.Hex, Priority = (int)TextmateOrder.Number, Regexes = [@"0x[0-9a-fA-F]+"])]
         [Regex<int>(@"0b[01]+", nameof(ParseBinary), State = (int)LexerStates.Code)]
+        [TextmateConstantNumericScope(NumericType.Binary, Priority = (int)TextmateOrder.Number, Regexes = [@"0b[01]+"])]
         Integer,
         [Regex<string>("""
             "([^\r\n\"\\]|(\\(n|t|r|\'|\")))*"
             """, nameof(StringUnescape), State = (int)LexerStates.Code)]
+        [TextmateStringQuotedScope(StringQuotedType.Double, Priority = (int)TextmateOrder.StringChar)]
         String,
         [Regex<char>("""
             '([^\r\n\'\\]|(\\(n|t|r|\'|\")))'
             """, nameof(CharUnescape), State = (int)LexerStates.Code)]
+        [TextmateStringQuotedScope(StringQuotedType.Single, Priority = (int)TextmateOrder.StringChar)]
         Char,
 
         [Regex(@"\+\+", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Increment)]
         Increment,
         [Regex(@"\-\-", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Decrement)]
         Decrement,
         [Regex(@"\+", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         Plus,
         [Regex(@"\-", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         Minus,
         [Regex(@"\*", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         Multiply,
         [Regex(@"/", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         Divide,
         [Regex(@"%", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         Modulo,
         [Regex(@"<", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         LessThan,
         [Regex(@">", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         MoreThan,
         [Regex(@"<=", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         LessThanOrEqual,
         [Regex(@">=", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         MoreThanOrEqual,
         [Regex(@"==", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         Equal,
         [Regex(@"!=", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         NotEqual,
         [Regex(@"=", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Assignment)]
         Assign,
         [Regex(@":=", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Assignment)]
         Declare,
         [Regex(@"\.\.", State = (int)LexerStates.Code)]
+        [TextmateKeywordOperatorScope(OperatorType.Arithmetic)]
         Range,
         CONTROLTOPLEVELSTATEMENTFILE,
         CONTROLNORMALFILE,
@@ -177,6 +233,18 @@ public partial class QuickCodeLexer(ITextSeekable text) : LexerBase<QuickCodeLex
         Initial = 0,
         KeywordAndSpecialSyntax = 1,
         Comment = 2
+    }
+    enum TextmateOrder : int
+    {
+        Regular = 0,
+        Identifier = 0,
+        SpecialIdentifier = 1,
+        Number = 2,
+        OperatorsAndPunctuations = 2,
+        Keywords = 3,
+        StringChar = 4,
+        LineComment = 5,
+        BlockComment = 6
     }
     public enum LexerStates
     {

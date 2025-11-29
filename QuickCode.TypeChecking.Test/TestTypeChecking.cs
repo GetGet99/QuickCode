@@ -3,6 +3,7 @@ using Get.PLShared;
 using QuickCode.AST.FileProgram;
 using QuickCode.Compiler;
 using QuickCode.Symbols;
+using QuickCode.Symbols.Compiler.Implementation;
 using System.Text;
 
 namespace QuickCode.TypeChecking.Test
@@ -27,7 +28,7 @@ namespace QuickCode.TypeChecking.Test
                 Assert.Fail();
                 return;
             }
-            if (ns["SampleClass"] is not TypeSymbol sampleClass)
+            if (ns["SampleClass"] is not ITypeSymbol sampleClass)
             {
                 Assert.Fail();
                 return;
@@ -37,14 +38,14 @@ namespace QuickCode.TypeChecking.Test
                 Assert.Fail();
                 return;
             }
-            Assert.AreEqual(TypeSymbol.Int32, i.Type);
+            Assert.AreEqual((ITypeSymbol)ITypeSymbol.Int32, (ITypeSymbol)i.Type);
             if (sampleClass.Children["j"] is not FieldSymbol j)
             {
                 Assert.Fail();
                 return;
             }
-            Assert.AreEqual(TypeSymbol.Int32, j.Type);
-            if (sampleClass.Children["PrintMe"] is not UserFuncSymbol printme)
+            Assert.AreEqual((ITypeSymbol)ITypeSymbol.Int32, (ITypeSymbol)j.Type);
+            if (sampleClass.Children["PrintMe"] is not QuickCodeFuncSymbol printme)
             {
                 Assert.Fail();
                 return;
